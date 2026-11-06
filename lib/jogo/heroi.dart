@@ -1,16 +1,23 @@
 import 'dart:math';
 
 import 'package:flame/components.dart';
+import 'package:flutter/material.dart';
 
 import 'aventura_jogo.dart';
 import 'classes.dart';
+import 'controle.dart';
 import 'fase.dart';
 import 'poderes.dart';
 import 'sons.dart';
 
 class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
-  Heroi({required this.classe, required Vector2 posicao})
-    : super(position: posicao, size: Vector2(largura, altura));
+  Heroi({
+    required this.classe,
+    required Vector2 posicao,
+    required this.jogador,
+    required this.controle,
+    this.mostrarNumero = false,
+  }) : super(position: posicao, size: Vector2(largura, altura));
 
   static const double largura = 12;
   static const double altura = 16;
@@ -28,6 +35,10 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   static const double _tempoInvencivel = 1.5;
 
   final ClasseDeHeroi classe;
+  final int jogador;
+  final Controle controle;
+  final bool mostrarNumero;
+  double _desmaio = 0;
   final Vector2 velocidade = Vector2.zero();
   double direcao = 1;
   double _recarga = 0;
@@ -51,9 +62,38 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       position: Vector2(largura / 2, altura + 1),
     );
     add(_visual);
+    if (mostrarNumero) {
+      add(
+        _PlaquinhaDoJogador(jogador: jogador)
+          ..position = Vector2(largura / 2, -9),
+      );
+    }
   }
 
   Fase get _fase => game.fase!;
+
+  bool get desmaiado => _desmaio > 0;
+
+  bool get ativo => !_congelado && !desmaiado;
+
+  void manterDentro(double esquerda, double direita) {
+    if (position.x < esquerda) {
+      position.x = esquerda;
+      if (velocidade.x < 0) velocidade.x = 0;
+    } else if (position.x + size.x > direita) {
+      position.x = direita - size.x;
+      if (velocidade.x > 0) velocidade.x = 0;
+    }
+  }
+
+  void desmaiar(double segundos, {required Vector2 perto}) {
+    _desmaio = segundos;
+    _congelado = false;
+    position.setFrom(perto);
+    velocidade.setZero();
+    _visual.opacity = 0.35;
+    Sons.tocar('dano', volume: 0.5);
+  }
 
   @override
   void update(double dt) {
@@ -62,7 +102,17 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       return;
     }
     dt = min(dt, 1 / 30);
-    final controle = game.controle;
+    if (desmaiado) {
+      _desmaio -= dt;
+      position.y -= 8 * dt;
+      _visual.opacity = 0.25 + 0.15 * sin(_desmaio * 10);
+      if (_desmaio <= 0) {
+        _desmaio = 0;
+        _visual.opacity = 1;
+        game.reviver(this);
+      }
+      return;
+    }
 
     var direcao = 0.0;
     if (controle.esquerda) direcao -= 1;
@@ -187,7 +237,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   }
 
   void quicarNoInimigo() {
-    velocidade.y = game.controle.seguraPulo ? -_velocidadeDoPulo : -260;
+    velocidade.y = controle.seguraPulo ? -_velocidadeDoPulo : -260;
     _puloCortavel = false;
   }
 
@@ -199,7 +249,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   }
 
   void levarDano({required double origemX}) {
-    if (_invencivel > 0 || _congelado) {
+    if (_invencivel > 0 || !ativo) {
       return;
     }
     _invencivel = _tempoInvencivel;
@@ -207,23 +257,25 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       ..x = (center.x < origemX ? -1 : 1) * 60
       ..y = -180;
     Sons.tocar('dano', volume: 0.5);
-    game.perderCoracao();
+    game.perderCoracao(this);
   }
 
   void caiuNoBuraco() {
-    if (_congelado) {
+    if (!ativo) {
       return;
     }
     Sons.tocar('dano', volume: 0.5);
     _congelado = true;
     velocidade.setZero();
-    game.perderCoracao(caiu: true);
+    game.perderCoracao(this, caiu: true);
   }
 
   void reaparecer(Vector2 posicao) {
     position.setFrom(posicao);
     velocidade.setZero();
     _congelado = false;
+    _desmaio = 0;
+    _visual.opacity = 1;
     _invencivel = _tempoInvencivel;
   }
 
@@ -233,5 +285,39 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     _visual
       ..scale.y = 1
       ..position.y = altura + 1;
+  }
+}
+
+class _PlaquinhaDoJogador extends PositionComponent {
+  _PlaquinhaDoJogador({required this.jogador})
+    : super(anchor: Anchor.center, size: Vector2(9, 9));
+
+  final int jogador;
+
+  static const cores = [Color(0xFFFF7A1A), Color(0xFF3FA9F5)];
+
+  late final Paint _fundo = Paint()..color = cores[jogador];
+  final Paint _borda = Paint()
+    ..color = const Color(0xFF3B2B4F)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1;
+  late final TextPaint _texto = TextPaint(
+    style: const TextStyle(
+      fontSize: 7,
+      fontWeight: FontWeight.w900,
+      color: Color(0xFFFFFFFF),
+    ),
+  );
+
+  @override
+  void render(Canvas canvas) {
+    canvas.drawCircle(const Offset(4.5, 4.5), 4.5, _fundo);
+    canvas.drawCircle(const Offset(4.5, 4.5), 4.5, _borda);
+    _texto.render(
+      canvas,
+      '${jogador + 1}',
+      Vector2(4.6, 4.6),
+      anchor: Anchor.center,
+    );
   }
 }

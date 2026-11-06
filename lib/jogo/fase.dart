@@ -24,17 +24,19 @@ class ResultadoMovimento {
 }
 
 class Fase extends World with HasGameReference<AventuraJogo> {
-  Fase({required this.dados, required this.classe, required this.numero});
+  Fase({required this.dados, required this.classes, required this.numero});
 
   final DadosDaFase dados;
   final int numero;
   final Map<(int, int), BlocoDeElemento> _blocosDeElemento = {};
   final List<Fogueira> fogueiras = [];
   final List<Diamante> diamantes = [];
-  final ClasseDeHeroi classe;
+  final List<ClasseDeHeroi> classes;
+
+  ClasseDeHeroi get classe => classes.first;
   final Set<(int, int)> _pedras = {};
   final List<PedraMagica> _pedrasAtivas = [];
-  static const _maximoDePedras = 3;
+  int get _maximoDePedras => 3 * herois.length;
 
   late final TiledComponent mapa;
   late final List<List<bool>> _solidos;
@@ -47,7 +49,9 @@ class Fase extends World with HasGameReference<AventuraJogo> {
   final List<Bandeira> checkpoints = [];
   late final Bandeira chegada;
 
-  late final Heroi heroi;
+  final List<Heroi> herois = [];
+
+  Heroi get heroi => herois.first;
   late Vector2 pontoDeRetorno;
   bool terminou = false;
 
@@ -135,14 +139,24 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     ]);
 
     pontoDeRetorno = inicio ?? Vector2(tamanhoBloco * 2, tamanhoBloco * 8);
-    heroi = Heroi(classe: classe, posicao: _posicaoDoHeroi(pontoDeRetorno));
-    add(heroi);
+    for (var j = 0; j < classes.length; j++) {
+      herois.add(
+        Heroi(
+          classe: classes[j],
+          posicao: _posicaoDoHeroi(pontoDeRetorno, j),
+          jogador: j,
+          controle: game.controles[j],
+          mostrarNumero: classes.length > 1,
+        ),
+      );
+    }
+    addAll(herois);
     game.totalDeMoedas = moedas.length;
     game.totalDeDiamantes = diamantes.length;
   }
 
-  Vector2 _posicaoDoHeroi(Vector2 ponto) => Vector2(
-    ponto.x + (tamanhoBloco - Heroi.largura) / 2,
+  Vector2 _posicaoDoHeroi(Vector2 ponto, [int indice = 0]) => Vector2(
+    ponto.x + (tamanhoBloco - Heroi.largura) / 2 + indice * 16,
     ponto.y + tamanhoBloco * 2 - Heroi.altura,
   );
 
@@ -239,6 +253,17 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     if (terminou) {
       return;
     }
+    for (final heroi in herois) {
+      if (!heroi.ativo) {
+        continue;
+      }
+      if (_interagir(heroi, dt)) {
+        return;
+      }
+    }
+  }
+
+  bool _interagir(Heroi heroi, double dt) {
     final corpo = heroi.toRect();
 
     for (final moeda in moedas) {
@@ -280,7 +305,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       }
     }
 
-    if (classe.poder != Golpe.fogo) {
+    if (heroi.classe.poder != Golpe.fogo) {
       for (final fogueira in fogueiras) {
         if (fogueira.acesa && fogueira.areaQueQueima.overlaps(corpo)) {
           heroi.levarDano(origemX: fogueira.center.x);
@@ -300,12 +325,18 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       terminou = true;
       chegada.ativar();
       game.venceu();
+      return true;
     }
 
     if (heroi.position.y > altura + 40) {
       heroi.caiuNoBuraco();
     }
+    return false;
   }
+
+  double distanciaAoHeroiMaisProximo(double x) => herois
+      .map((h) => (h.position.x - x).abs())
+      .reduce((a, b) => a < b ? a : b);
 
   void criarPedraNaFrente(Heroi heroi) {
     final coluna = heroi.direcao > 0
@@ -407,7 +438,11 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     pedra.removeFromParent();
   }
 
-  void voltarAoPontoDeRetorno() {
-    heroi.reaparecer(_posicaoDoHeroi(pontoDeRetorno));
+  void voltarAoPontoDeRetorno({Heroi? apenas}) {
+    for (final heroi in herois) {
+      if (apenas == null || heroi == apenas) {
+        heroi.reaparecer(_posicaoDoHeroi(pontoDeRetorno, heroi.jogador));
+      }
+    }
   }
 }

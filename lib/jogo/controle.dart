@@ -1,5 +1,7 @@
 import 'package:flutter/services.dart';
 
+import 'entrada_de_controles.dart';
+
 class Controle {
   bool _teclaEsquerda = false;
   bool _teclaDireita = false;
@@ -40,9 +42,19 @@ class Controle {
     LogicalKeyboardKey.gameButtonY,
   };
 
-  bool get esquerda => _teclaEsquerda || toqueEsquerda;
-  bool get direita => _teclaDireita || toqueDireita;
-  bool get seguraPulo => _teclaPulo || _toquePulo;
+  bool _nativoEsquerda = false;
+  bool _nativoDireita = false;
+  bool _nativoPulo = false;
+  bool _nativoAtaque = false;
+  double _eixoX = 0;
+  double _eixoY = 0;
+
+  bool get esquerda =>
+      _teclaEsquerda || toqueEsquerda || _nativoEsquerda || _eixoX < -0.5;
+  bool get direita =>
+      _teclaDireita || toqueDireita || _nativoDireita || _eixoX > 0.5;
+  bool get seguraPulo =>
+      _teclaPulo || _toquePulo || _nativoPulo || _eixoY < -0.5;
 
   bool consumirPedidoDePulo() {
     final pediu = _pediuPulo;
@@ -94,7 +106,46 @@ class Controle {
     }
   }
 
+  void receberNativo(EventoDeControle evento) {
+    if (evento.eixo) {
+      if (evento.y < -0.5 && _eixoY >= -0.5) {
+        _pediuPulo = true;
+      }
+      if (evento.y > 0.5 && _eixoY <= 0.5) {
+        _pediuAtaque = true;
+      }
+      _eixoX = evento.x;
+      _eixoY = evento.y;
+      return;
+    }
+    final apertou = evento.apertou;
+    switch (evento.acao) {
+      case Acao.esquerda:
+        _nativoEsquerda = apertou;
+      case Acao.direita:
+        _nativoDireita = apertou;
+      case Acao.pulo:
+        if (apertou && !_nativoPulo) {
+          _pediuPulo = true;
+        }
+        _nativoPulo = apertou;
+      case Acao.ataque:
+        if (apertou && !_nativoAtaque) {
+          _pediuAtaque = true;
+        }
+        _nativoAtaque = apertou;
+      case null:
+        break;
+    }
+  }
+
   void soltarTudo() {
+    _nativoEsquerda = false;
+    _nativoDireita = false;
+    _nativoPulo = false;
+    _nativoAtaque = false;
+    _eixoX = 0;
+    _eixoY = 0;
     _teclaAtaque = false;
     _pediuAtaque = false;
     _teclaEsquerda = false;

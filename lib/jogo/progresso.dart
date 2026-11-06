@@ -37,6 +37,13 @@ class Progresso {
   static int get ultimaFase => _prefs.getInt('ultima_fase') ?? 0;
   static set ultimaFase(int valor) => _prefs.setInt('ultima_fase', valor);
 
+  static int get heroiDoJogador2 => _prefs.getInt('ultimo_heroi_2') ?? 1;
+  static set heroiDoJogador2(int valor) =>
+      _prefs.setInt('ultimo_heroi_2', valor);
+
+  static int get jogadores => _prefs.getInt('jogadores') ?? 1;
+  static set jogadores(int valor) => _prefs.setInt('jogadores', valor);
+
   static bool get musicaLigada => _prefs.getBool('musica_ligada') ?? true;
   static set musicaLigada(bool valor) => _prefs.setBool('musica_ligada', valor);
 }

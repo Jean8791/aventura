@@ -116,7 +116,7 @@ class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
       return;
     }
     final fase = game.fase!;
-    if ((fase.heroi.position.x - position.x).abs() > 420) {
+    if (fase.distanciaAoHeroiMaisProximo(position.x) > 420) {
       return;
     }
     dt = min(dt, 1 / 30);

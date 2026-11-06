@@ -18,6 +18,17 @@ Roda em celular e tablet Android e também em TV box Android, com controle remot
 - A mola joga o herói lá para cima.
 - O botão de nota musical, no canto de cima, liga e desliga a música.
 
+## Dois jogadores
+
+Na tela inicial, escolha **2 jogadores**. Cada jogador aperta um botão no próprio controle para entrar (controle Bluetooth, controle remoto da TV box ou teclado) e depois escolhe o seu herói.
+
+- No teclado, dá para jogar os dois: o jogador que entrar com W, A, S ou D usa essas teclas (W pula, S usa o poder); o outro usa as setas.
+- A câmera fica entre os dois, e ninguém sai da tela: um precisa esperar o outro.
+- Cada um tem os seus corações. Quem cai num buraco reaparece ao lado do companheiro. Quem perde todos os corações desmaia por 3 segundos e volta ao lado do companheiro com os corações cheios. A fase só recomeça se os dois desmaiarem.
+- Moedas e diamantes são do time.
+
+Para saber de qual controle veio cada botão, o app lê os eventos no Android (`MainActivity.kt`) e os envia ao Flutter pelo canal `aventura/controles` com o número do dispositivo.
+
 ## Heróis
 
 | Herói | Poder | Corações |
@@ -110,7 +121,8 @@ lib/
     obstaculos.dart    gelo, parede rachada, fogueira e diamante
     fases.dart         lista das fases (mapa, fundo e cor do céu)
     itens.dart         moeda, mola e bandeira
-    controle.dart      toque, teclado, controle remoto e gamepad
+    controle.dart      toque, teclado, controle remoto e gamepad de um jogador
+    entrada_de_controles.dart  eventos dos controles vindos do Android, com o número do dispositivo
   telas/               escolha do herói, placar, botões de toque, vitória e derrota
 assets/
   images/ tiles/ audio/

@@ -19,7 +19,33 @@ class EscolhaHeroi extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Escolha seu herói!', style: estiloTitulo),
+            if (jogo.jogadores == 1)
+              const Text('Escolha seu herói!', style: estiloTitulo)
+            else
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: jogo.jogadorEscolhendo == 0
+                        ? const Color(0xFFFF7A1A)
+                        : const Color(0xFF3FA9F5),
+                    child: Text(
+                      '${jogo.jogadorEscolhendo + 1}',
+                      style: const TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Jogador ${jogo.jogadorEscolhendo + 1}, escolha!',
+                    style: estiloTitulo,
+                  ),
+                ],
+              ),
             const SizedBox(height: 18),
             Wrap(
               spacing: 14,
@@ -35,6 +61,28 @@ class EscolhaHeroi extends StatelessWidget {
                     child: _CartaoDeHeroi(classe: classes[i]),
                   ),
               ],
+            ),
+            const SizedBox(height: 14),
+            ExcludeFocus(
+              child: TextButton.icon(
+                onPressed: jogo.abrirEscolhaDeModo,
+                icon: Icon(
+                  jogo.jogadores == 1
+                      ? Icons.person_rounded
+                      : Icons.people_alt_rounded,
+                  color: Colors.white,
+                ),
+                label: Text(
+                  jogo.jogadores == 1
+                      ? '1 jogador · trocar'
+                      : '2 jogadores · trocar',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

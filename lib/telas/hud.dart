@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
 import '../jogo/aventura_jogo.dart';
+import '../jogo/classes.dart';
 import '../jogo/sons.dart';
+
+const _corDoTexto = TextStyle(
+  fontSize: 26,
+  fontWeight: FontWeight.w900,
+  color: Colors.white,
+);
+
+const _coresDosJogadores = [Color(0xFFFF7A1A), Color(0xFF3FA9F5)];
 
 class Hud extends StatelessWidget {
   const Hud({super.key, required this.jogo});
@@ -23,7 +32,7 @@ class Hud extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
+                  horizontal: 12,
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
@@ -33,22 +42,10 @@ class Hud extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ValueListenableBuilder<int>(
-                      valueListenable: jogo.coracoes,
-                      builder: (_, coracoes, _) => Row(
-                        children: [
-                          for (var i = 0; i < jogo.coracoesMaximos; i++)
-                            Icon(
-                              i < coracoes
-                                  ? Icons.favorite
-                                  : Icons.favorite_border,
-                              color: const Color(0xFFFF4D6D),
-                              size: 30,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 18),
+                    for (var j = 0; j < jogo.jogadores; j++) ...[
+                      _CoracoesDoJogador(jogo: jogo, jogador: j),
+                      const SizedBox(width: 14),
+                    ],
                     Container(
                       width: 24,
                       height: 24,
@@ -61,24 +58,18 @@ class Hud extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 6),
                     ValueListenableBuilder<int>(
                       valueListenable: jogo.moedas,
-                      builder: (_, moedas, _) => Text(
-                        '$moedas',
-                        style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                        ),
-                      ),
+                      builder: (_, moedas, _) =>
+                          Text('$moedas', style: _corDoTexto),
                     ),
                     ValueListenableBuilder<int>(
                       valueListenable: jogo.diamantes,
                       builder: (_, diamantes, _) => jogo.totalDeDiamantes == 0
                           ? const SizedBox.shrink()
                           : Padding(
-                              padding: const EdgeInsets.only(left: 16),
+                              padding: const EdgeInsets.only(left: 14),
                               child: Row(
                                 children: [
                                   Image.asset(
@@ -89,14 +80,7 @@ class Hud extends StatelessWidget {
                                     filterQuality: FilterQuality.none,
                                   ),
                                   const SizedBox(width: 4),
-                                  Text(
-                                    '$diamantes',
-                                    style: const TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w900,
-                                      color: Colors.white,
-                                    ),
-                                  ),
+                                  Text('$diamantes', style: _corDoTexto),
                                 ],
                               ),
                             ),
@@ -108,6 +92,68 @@ class Hud extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _CoracoesDoJogador extends StatelessWidget {
+  const _CoracoesDoJogador({required this.jogo, required this.jogador});
+
+  final AventuraJogo jogo;
+  final int jogador;
+
+  @override
+  Widget build(BuildContext context) {
+    final classe = classes[jogo.heroisEscolhidos[jogador]];
+    final doisJogadores = jogo.jogadores > 1;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (doisJogadores) ...[
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Image.asset(
+                classe.caminhoDaImagem,
+                width: 30,
+                height: 30,
+                fit: BoxFit.contain,
+                filterQuality: FilterQuality.none,
+              ),
+              Positioned(
+                right: -6,
+                top: -6,
+                child: CircleAvatar(
+                  radius: 8,
+                  backgroundColor: _coresDosJogadores[jogador],
+                  child: Text(
+                    '${jogador + 1}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(width: 6),
+        ],
+        ValueListenableBuilder<int>(
+          valueListenable: jogo.coracoesDosJogadores[jogador],
+          builder: (_, coracoes, _) => Row(
+            children: [
+              for (var i = 0; i < jogo.coracoesMaximos[jogador]; i++)
+                Icon(
+                  i < coracoes ? Icons.favorite : Icons.favorite_border,
+                  color: const Color(0xFFFF4D6D),
+                  size: doisJogadores ? 24 : 30,
+                ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

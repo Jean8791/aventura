@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'jogo/aventura_jogo.dart';
 import 'jogo/progresso.dart';
 import 'telas/controles_toque.dart';
+import 'telas/entrar_jogadores.dart';
 import 'telas/escolha_fase.dart';
+import 'telas/escolha_modo.dart';
 import 'telas/escolha_heroi.dart';
 import 'telas/fim_de_fase.dart';
 import 'telas/hud.dart';
@@ -44,6 +46,9 @@ class _AventuraAppState extends State<AventuraApp> {
           autofocus: false,
           overlayBuilderMap: {
             AventuraJogo.overlayEscolha: (_, jogo) => EscolhaHeroi(jogo: jogo),
+            AventuraJogo.overlayModo: (_, jogo) => EscolhaModo(jogo: jogo),
+            AventuraJogo.overlayEntrar: (_, jogo) =>
+                EntrarJogadores(jogo: jogo),
             AventuraJogo.overlayFases: (_, jogo) => EscolhaFase(jogo: jogo),
             AventuraJogo.overlayHud: (_, jogo) => Hud(jogo: jogo),
             AventuraJogo.overlayControles: (_, jogo) =>
