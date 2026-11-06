@@ -29,7 +29,11 @@ class Hud extends StatelessWidget {
               valueListenable: jogo.vidaDoChefe,
               builder: (_, vida, _) => vida == null
                   ? const SizedBox.shrink()
-                  : _BarraDoChefe(vida: vida),
+                  : ValueListenableBuilder<int>(
+                      valueListenable: jogo.estagioDoChefe,
+                      builder: (_, estagio, _) =>
+                          _BarraDoChefe(vida: vida, estagio: estagio),
+                    ),
             ),
           ),
           Align(
@@ -180,9 +184,17 @@ class _CoracoesDoJogador extends StatelessWidget {
 }
 
 class _BarraDoChefe extends StatelessWidget {
-  const _BarraDoChefe({required this.vida});
+  const _BarraDoChefe({required this.vida, required this.estagio});
 
   final double vida;
+  final int estagio;
+
+  static const _cores = [
+    Color(0xFFFF4FD8),
+    Color(0xFFFF8A1F),
+    Color(0xFFFF2A2A),
+  ];
+  static const _titulos = ['', ' · Bravo', ' · Furioso'];
 
   @override
   Widget build(BuildContext context) {
@@ -191,14 +203,33 @@ class _BarraDoChefe extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            Chefe.nome,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: Colors.white,
-              shadows: [Shadow(offset: Offset(2, 2), color: Color(0xFF3B2B4F))],
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '${Chefe.nome}${_titulos[estagio.clamp(0, 2)]}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(offset: Offset(2, 2), color: Color(0xFF3B2B4F)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              for (var i = 0; i < estagiosDoChefe.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Icon(
+                    Icons.circle,
+                    size: 12,
+                    color: i < estagiosDoChefe.length - estagio
+                        ? _cores[estagio.clamp(0, 2)]
+                        : const Color(0x553B2B4F),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 4),
           Container(
@@ -217,7 +248,7 @@ class _BarraDoChefe extends StatelessWidget {
                 widthFactor: vida.clamp(0.0, 1.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF4FD8),
+                    color: _cores[estagio.clamp(0, 2)],
                     borderRadius: BorderRadius.circular(6),
                   ),
                 ),

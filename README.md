@@ -61,7 +61,17 @@ Inimigos e fraquezas:
 
 ### O chefão: Feiticeiro das Sombras
 
-Ele flutua lançando orbes (dá para desviar ou destruí-los com qualquer poder), treme como aviso e dá uma investida pelo chão. Quando bate na parede, fica tonto por alguns segundos: é a hora de atacar, porque tonto ele leva dano dobrado. A cada três ciclos chama um slime, e na metade da vida solta um coração. Todo herói consegue machucá-lo, inclusive pulando em cima dele. Se os heróis perderem, o dano que ele já levou continua valendo. A luta tem música própria.
+Ele flutua lançando orbes (dá para desviar ou destruí-los com qualquer poder), treme como aviso e dá uma investida pelo chão. Quando bate na parede, fica tonto por alguns segundos: é a hora de atacar, porque tonto ele leva dano dobrado. Todo herói consegue machucá-lo, inclusive pulando em cima dele. A luta tem música própria.
+
+A luta tem 3 estágios. Quando a vida zera, ele se transforma, volta com a vida cheia, solta um coração e fica mais agressivo:
+
+| Estágio | Visual | Ataques |
+|---|---|---|
+| 1. Feiticeiro | roxo | 1 orbe por vez, investida, chama slime |
+| 2. Bravo | vermelho, maior, aura laranja | 2 orbes em V, chuva de orbes, investida mais rápida, chama slime de fogo |
+| 3. Furioso | vinho, maior ainda, aura vermelha | 3 orbes em leque, chuva maior, investida dupla, fica tonto menos tempo, chama slime de fogo e morcego |
+
+Se os heróis perderem, o estágio e o dano que ele já levou continuam valendo.
 
 O caminho até a bandeira é possível com qualquer herói. Cada fase esconde 3 diamantes, e muitos deles ficam atrás de obstáculos de elemento, então cada herói alcança uma parte:
 
