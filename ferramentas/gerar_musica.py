@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+"""Compõe e gera assets/audio/musica_fase1.wav, a música de fundo da fase 1.
+
+Música original em estilo 8-bit: melodia em onda quadrada, baixo em onda triangular e
+bateria de ruído. Dó maior, 150 BPM, 16 compassos que repetem sem emenda.
+
+Notação das partes: cada compasso tem 8 colcheias separadas por espaço.
+  C5, F#4, Bb3  nota (nome + oitava)
+  -             continua a nota anterior
+  .             pausa
+"""
+
+import math
+import struct
+import wave
+from pathlib import Path
+
+TAXA = 22050
+BPM = 150
+COLCHEIA = 60 / BPM / 2
+
+MELODIA = [
+    "E5 . G5 . C6 - G5 .",
+    "A5 - G5 E5 C5 - E5 .",
+    "F5 . A5 . C6 - A5 .",
+    "G5 - F5 D5 B4 - D5 .",
+    "E5 . G5 . C6 - E6 .",
+    "D6 - C6 A5 E5 - A5 .",
+    "F5 A5 C6 A5 G5 F5 E5 D5",
+    "G5 - - . D5 E5 F5 G5",
+    "A5 - A5 G5 A5 - C6 -",
+    "B5 - G5 . D5 - G5 .",
+    "G5 - G5 F5 E5 - B4 .",
+    "C5 - E5 . A5 - - .",
+    "A5 . C6 . F6 - C6 .",
+    "B5 . D6 . G6 - D6 .",
+    "E6 - D6 C6 G5 - E5 .",
+    "D5 . G5 . B5 . D6 .",
+]
+
+ACORDES = ["C", "Am", "F", "G", "C", "Am", "F", "G", "F", "G", "Em", "Am", "F", "G", "C", "G"]
+
+TONICA_E_QUINTA = {
+    "C": ("C3", "G2"),
+    "Am": ("A2", "E2"),
+    "F": ("F2", "C3"),
+    "G": ("G2", "D3"),
+    "Em": ("E2", "B2"),
+}
+
+SEMITONS = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
+
+
+def frequencia(nota):
+    nome, resto = nota[0], nota[1:]
+    acidente = 0
+    if resto and resto[0] in "#b":
+        acidente = 1 if resto[0] == "#" else -1
+        resto = resto[1:]
+    midi = 12 * (int(resto) + 1) + SEMITONS[nome] + acidente
+    return 440.0 * 2 ** ((midi - 69) / 12)
+
+
+def ler_parte(compassos):
+    notas = []
+    passo = 0
+    for compasso in compassos:
+        for simbolo in compasso.split():
+            if simbolo == "-":
+                if notas:
+                    notas[-1][2] += 1
+            elif simbolo != ".":
+                notas.append([frequencia(simbolo), passo, 1])
+            passo += 1
+    return notas
+
+
+def baixo():
+    compassos = []
+    for acorde in ACORDES:
+        tonica, quinta = TONICA_E_QUINTA[acorde]
+        compassos.append(f"{tonica} . {quinta} . {tonica} . {quinta} {tonica}")
+    return compassos
+
+
+def envelope(t, duracao, ataque=0.005, soltura=0.03):
+    if t < ataque:
+        return t / ataque
+    if t > duracao - soltura:
+        return max(0.0, (duracao - t) / soltura)
+    return 1.0
+
+
+def onda_quadrada(fase, ciclo=0.25):
+    return 1.0 if (fase % 1.0) < ciclo else -1.0
+
+
+def onda_triangular(fase):
+    x = fase % 1.0
+    return 4 * x - 1 if x < 0.5 else 3 - 4 * x
+
+
+class Ruido:
+    def __init__(self, semente=12345):
+        self.estado = semente
+
+    def proximo(self):
+        self.estado = (1103515245 * self.estado + 12345) & 0x7FFFFFFF
+        return self.estado / 0x3FFFFFFF - 1.0
+
+
+def tocar_notas(saida, notas, onda, volume, decaimento=0.0):
+    for freq, passo, colcheias in notas:
+        inicio = int(passo * COLCHEIA * TAXA)
+        duracao = colcheias * COLCHEIA * 0.95
+        n = int(duracao * TAXA)
+        for i in range(n):
+            t = i / TAXA
+            amp = volume * envelope(t, duracao) * (math.exp(-t * decaimento) * 0.4 + 0.6 if decaimento else 1)
+            if inicio + i < len(saida):
+                saida[inicio + i] += amp * onda(freq * t)
+
+
+def bateria(saida, compassos):
+    ruido = Ruido()
+    amostras_colcheia = COLCHEIA * TAXA
+    for passo in range(compassos * 8):
+        inicio = int(passo * amostras_colcheia)
+        no_compasso = passo % 8
+        if no_compasso in (0, 4):
+            for i in range(int(0.12 * TAXA)):
+                t = i / TAXA
+                freq = 50 + 70 * math.exp(-t * 30)
+                saida[inicio + i] += 0.45 * math.exp(-t * 25) * math.sin(2 * math.pi * freq * t)
+        if no_compasso in (2, 6):
+            for i in range(int(0.12 * TAXA)):
+                t = i / TAXA
+                saida[inicio + i] += 0.12 * math.exp(-t * 30) * ruido.proximo()
+        for i in range(int(0.03 * TAXA)):
+            t = i / TAXA
+            saida[inicio + i] += 0.035 * math.exp(-t * 120) * ruido.proximo()
+
+
+def main():
+    compassos = len(MELODIA)
+    total = int(compassos * 8 * COLCHEIA * TAXA)
+    saida = [0.0] * total
+
+    tocar_notas(saida, ler_parte(MELODIA), lambda f: onda_quadrada(f), 0.16, decaimento=6)
+    tocar_notas(saida, ler_parte(baixo()), onda_triangular, 0.30)
+    bateria(saida, compassos)
+
+    destino = Path(__file__).resolve().parent.parent / "assets" / "audio" / "musica_fase1.wav"
+    with wave.open(str(destino), "wb") as arquivo:
+        arquivo.setnchannels(1)
+        arquivo.setsampwidth(2)
+        arquivo.setframerate(TAXA)
+        quadros = bytearray()
+        for valor in saida:
+            quadros += struct.pack("<h", int(max(-1.0, min(1.0, valor)) * 32000))
+        arquivo.writeframes(bytes(quadros))
+    print(f"{destino} gerado: {total / TAXA:.1f} s, pico {max(abs(v) for v in saida):.2f}")
+
+
+if __name__ == "__main__":
+    main()

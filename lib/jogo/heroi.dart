@@ -109,7 +109,9 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     if (velocidade.y >= 0) {
       _puloCortavel = false;
     }
-    if (_puloCortavel && !controle.seguraPulo && velocidade.y < -_velocidadeAoSoltarPulo) {
+    if (_puloCortavel &&
+        !controle.seguraPulo &&
+        velocidade.y < -_velocidadeAoSoltarPulo) {
       velocidade.y = -_velocidadeAoSoltarPulo;
       _puloCortavel = false;
     }

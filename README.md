@@ -15,6 +15,7 @@ Roda em celular e tablet Android e também em TV box Android, com controle remot
 - Pular em cima de um inimigo derrota ele; encostar de lado tira um coração.
 - A bandeira do meio da fase guarda o progresso: depois de perder os corações, o jogo volta dela.
 - A mola joga o herói lá para cima.
+- O botão de nota musical, no canto de cima, liga e desliga a música.
 
 ## Rodando
 
@@ -45,6 +46,14 @@ Abra o arquivo no Tiled, desenhe com os blocos de `blocos.png`, salve e rode o j
 
 A versão inicial da fase foi gerada por `ferramentas/gerar_fase1.py`. Rodar o script de novo **sobrescreve** as edições feitas no Tiled.
 
+## Música
+
+A música de fundo é uma composição original, gerada por `ferramentas/gerar_musica.py` (Python puro, sem dependências): melodia 8-bit, baixo e bateria, em Dó maior a 150 BPM, com 16 compassos que repetem sem emenda. Para mudar a música, edite as linhas de `MELODIA` e `ACORDES` no script e rode:
+
+```bash
+python3 ferramentas/gerar_musica.py
+```
+
 ## Estrutura
 
 ```
@@ -66,4 +75,6 @@ Feito com [Flame](https://flame-engine.org/) e [flame_tiled](https://pub.dev/pac
 
 ## Créditos
 
-Arte e sons: [Kenney](https://kenney.nl) — pacotes *Pixel Platformer*, *Digital Audio* e *Music Jingles*, licença CC0 (`assets/LICENCA-KENNEY.txt`).
+Arte e efeitos sonoros: [Kenney](https://kenney.nl) — pacotes *Pixel Platformer*, *Digital Audio* e *Music Jingles*, licença CC0 (`assets/LICENCA-KENNEY.txt`).
+
+Música de fundo: composição original deste projeto.

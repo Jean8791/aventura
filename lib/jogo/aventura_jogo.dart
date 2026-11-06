@@ -97,6 +97,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     overlays
       ..add(overlayHud)
       ..add(overlayControles);
+    Sons.iniciarMusica();
     _focarNoJogo();
   }
 
@@ -105,6 +106,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void voltarParaEscolha() {
+    Sons.pararMusica();
     overlays
       ..remove(overlayVitoria)
       ..remove(overlayDerrota)
@@ -117,6 +119,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     coracoes.value = max(0, coracoes.value - 1);
     if (coracoes.value == 0) {
       fase?.heroi.congelar();
+      Sons.pausarMusica();
       Sons.tocar('derrota');
       overlays.remove(overlayControles);
       _abrirMenu(overlayDerrota);
@@ -134,11 +137,13 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     coracoes.value = coracoesIniciais;
     controle.soltarTudo();
     fase?.voltarAoPontoDeRetorno();
+    Sons.retomarMusica();
     _focarNoJogo();
   }
 
   void venceu() {
     fase?.heroi.congelar();
+    Sons.pararMusica();
     Sons.tocar('vitoria');
     overlays.remove(overlayControles);
     _abrirMenu(overlayVitoria);
