@@ -7,6 +7,7 @@ import 'aventura_jogo.dart';
 import 'classes.dart';
 import 'controle.dart';
 import 'fase.dart';
+import 'itens.dart';
 import 'poderes.dart';
 import 'sons.dart';
 
@@ -39,6 +40,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   final Controle controle;
   final bool mostrarNumero;
   double _desmaio = 0;
+  PlataformaMovel? _plataforma;
   final Vector2 velocidade = Vector2.zero();
   double direcao = 1;
   double _recarga = 0;
@@ -163,10 +165,18 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       _usarPoder();
     }
 
+    final plataformaAnterior = _plataforma;
+    if (plataformaAnterior != null) {
+      position.add(plataformaAnterior.deslocamento);
+    }
     final pesAntes = position.y + size.y;
     velocidade.y = min(velocidade.y + _gravidade * dt, _quedaMaxima);
     final resultado = _fase.mover(position, size, velocidade, dt);
-    noChao = resultado.noChao || _pousarEmInimigoPreso(pesAntes);
+    _plataforma = resultado.noChao ? null : _pousarEmPlataforma(pesAntes);
+    noChao =
+        resultado.noChao ||
+        _plataforma != null ||
+        _pousarEmInimigoPreso(pesAntes);
 
     if (_invencivel > 0) {
       _invencivel = max(0, _invencivel - dt);
@@ -176,6 +186,25 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     }
 
     _animar(dt);
+  }
+
+  PlataformaMovel? _pousarEmPlataforma(double pesAntes) {
+    if (velocidade.y < 0) {
+      return null;
+    }
+    for (final plataforma in _fase.plataformas) {
+      final topo = plataforma.position.y;
+      final pes = position.y + size.y;
+      final sobreposicaoX =
+          position.x + size.x > plataforma.position.x + 2 &&
+          position.x < plataforma.position.x + plataforma.size.x - 2;
+      if (sobreposicaoX && pesAntes <= topo + 5 && pes >= topo - 1) {
+        position.y = topo - size.y;
+        velocidade.y = 0;
+        return plataforma;
+      }
+    }
+    return null;
   }
 
   bool _pousarEmInimigoPreso(double pesAntes) {

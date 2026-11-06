@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../jogo/aventura_jogo.dart';
+import '../jogo/chefe.dart';
 import '../jogo/classes.dart';
 import '../jogo/sons.dart';
 
@@ -22,6 +23,15 @@ class Hud extends StatelessWidget {
     return SafeArea(
       child: Stack(
         children: [
+          Align(
+            alignment: Alignment.topCenter,
+            child: ValueListenableBuilder<double?>(
+              valueListenable: jogo.vidaDoChefe,
+              builder: (_, vida, _) => vida == null
+                  ? const SizedBox.shrink()
+                  : _BarraDoChefe(vida: vida),
+            ),
+          ),
           Align(
             alignment: Alignment.topRight,
             child: ExcludeFocus(
@@ -165,6 +175,57 @@ class _CoracoesDoJogador extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BarraDoChefe extends StatelessWidget {
+  const _BarraDoChefe({required this.vida});
+
+  final double vida;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 66),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text(
+            Chefe.nome,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+              color: Colors.white,
+              shadows: [Shadow(offset: Offset(2, 2), color: Color(0xFF3B2B4F))],
+            ),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            width: 280,
+            height: 18,
+            padding: const EdgeInsets.all(3),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B2B4F),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: Colors.white, width: 2),
+            ),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: AnimatedFractionallySizedBox(
+                duration: const Duration(milliseconds: 250),
+                widthFactor: vida.clamp(0.0, 1.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF4FD8),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

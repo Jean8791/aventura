@@ -38,7 +38,7 @@ class EscolhaFase extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Wrap(
-              spacing: 16,
+              spacing: 10,
               runSpacing: 16,
               alignment: WrapAlignment.center,
               children: [
@@ -46,7 +46,7 @@ class EscolhaFase extends StatelessWidget {
                   BotaoGrande(
                     autofocus: i == jogo.faseAtual,
                     cor: Colors.white,
-                    padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                    padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
                     aoApertar: () => jogo.comecar(i),
                     child: _CartaoDeFase(
                       numero: i + 1,
@@ -101,15 +101,15 @@ class _CartaoDeFase extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 150,
+      width: 116,
       child: Column(
         children: [
           Stack(
             clipBehavior: Clip.none,
             children: [
               Container(
-                width: 72,
-                height: 72,
+                width: 58,
+                height: 58,
                 decoration: BoxDecoration(
                   color: dados.cor,
                   shape: BoxShape.circle,
@@ -117,7 +117,7 @@ class _CartaoDeFase extends StatelessWidget {
                 ),
                 child: Icon(
                   dados.icone,
-                  size: 42,
+                  size: 34,
                   color: const Color(0xFF3B2B4F),
                 ),
               ),
@@ -148,10 +148,20 @@ class _CartaoDeFase extends StatelessWidget {
           Text(
             dados.nome,
             textAlign: TextAlign.center,
-            style: estiloBotao.copyWith(fontSize: 19),
+            style: estiloBotao.copyWith(fontSize: 16),
           ),
           const SizedBox(height: 4),
-          LinhaDeDiamantes(quantidade: diamantes, tamanho: 22),
+          if (dados.chefe)
+            const Text(
+              'Chefão!',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFFD6309F),
+              ),
+            )
+          else
+            LinhaDeDiamantes(quantidade: diamantes, tamanho: 20),
         ],
       ),
     );

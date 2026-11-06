@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -117,5 +118,85 @@ class Bandeira extends PositionComponent with HasGameReference<AventuraJogo> {
     _pano
       ..opacity = 1
       ..playing = true;
+  }
+}
+
+class Coracao extends SpriteComponent with HasGameReference<AventuraJogo> {
+  Coracao({required Vector2 posicao})
+    : super(position: posicao, size: Vector2.all(tamanhoBloco));
+
+  bool coletado = false;
+  double _tempo = 0;
+  late double _yBase;
+
+  @override
+  Future<void> onLoad() async {
+    sprite = _folhaDeBlocos(game).getSpriteById(44);
+    _yBase = position.y;
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (coletado) {
+      return;
+    }
+    _tempo += dt;
+    position.y = _yBase + (_tempo * 4 % 2 < 1 ? 0 : -1.5);
+  }
+
+  void coletar() {
+    coletado = true;
+    add(MoveByEffect(Vector2(0, -16), EffectController(duration: 0.3)));
+    add(
+      OpacityEffect.fadeOut(
+        EffectController(duration: 0.3),
+        onComplete: removeFromParent,
+      ),
+    );
+  }
+}
+
+class PlataformaMovel extends PositionComponent
+    with HasGameReference<AventuraJogo> {
+  PlataformaMovel({
+    required this.inicio,
+    required this.fim,
+    this.periodo = 5,
+    this.tileEsquerda = 1,
+  }) : super(
+         position: inicio.clone(),
+         size: Vector2(tamanhoBloco * 3, tamanhoBloco),
+       );
+
+  final Vector2 inicio;
+  final Vector2 fim;
+  final double periodo;
+  final int tileEsquerda;
+  final Vector2 deslocamento = Vector2.zero();
+  double _tempo = 0;
+
+  @override
+  Future<void> onLoad() async {
+    final folha = _folhaDeBlocos(game);
+    for (var i = 0; i < 3; i++) {
+      add(
+        SpriteComponent(
+          sprite: folha.getSpriteById(tileEsquerda + i),
+          position: Vector2(i * tamanhoBloco, 0),
+          size: Vector2.all(tamanhoBloco),
+        ),
+      );
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _tempo += dt;
+    final t = (1 - cos(_tempo * 2 * pi / periodo)) / 2;
+    final nova = inicio + (fim - inicio) * t;
+    deslocamento.setFrom(nova - position);
+    position.setFrom(nova);
   }
 }

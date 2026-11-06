@@ -54,6 +54,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   final ValueNotifier<bool> mostrarControlesDeToque = ValueNotifier(true);
   int totalDeMoedas = 0;
   final ValueNotifier<int> diamantes = ValueNotifier(0);
+  final ValueNotifier<double?> vidaDoChefe = ValueNotifier(null);
   int totalDeDiamantes = 0;
 
   int jogadores = Progresso.jogadores.clamp(1, 2);
@@ -79,6 +80,8 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       'blocos.png',
       'fundo.png',
       'fundo_deserto.png',
+      'fundo_caverna.png',
+      'inimigos/feiticeiro.png',
       'diamante.png',
       'obstaculos_gelo.png',
       'obstaculos_rachada.png',
@@ -282,6 +285,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     _fecharTudo();
     moedas.value = 0;
     diamantes.value = 0;
+    vidaDoChefe.value = null;
     for (var j = 0; j < jogadores; j++) {
       coracoesMaximos[j] = classes[heroisEscolhidos[j]].coracoes;
       coracoesDosJogadores[j].value = coracoesMaximos[j];
@@ -303,7 +307,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     await nova.loaded;
 
     overlays.addAll([overlayHud, overlayControles]);
-    Sons.iniciarMusica();
+    Sons.iniciarMusica(fases[indiceFase].musica);
     _focarNoJogo();
   }
 

@@ -4,8 +4,10 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 
+import 'alvo.dart';
 import 'aventura_jogo.dart';
 import 'classes.dart';
+import 'chefe.dart';
 import 'heroi.dart';
 import 'inimigo.dart';
 import 'fases.dart';
@@ -31,6 +33,9 @@ class Fase extends World with HasGameReference<AventuraJogo> {
   final Map<(int, int), BlocoDeElemento> _blocosDeElemento = {};
   final List<Fogueira> fogueiras = [];
   final List<Diamante> diamantes = [];
+  final List<Coracao> coracoes = [];
+  final List<PlataformaMovel> plataformas = [];
+  Chefe? chefe;
   final List<ClasseDeHeroi> classes;
 
   ClasseDeHeroi get classe => classes.first;
@@ -45,9 +50,16 @@ class Fase extends World with HasGameReference<AventuraJogo> {
 
   final List<Moeda> moedas = [];
   final List<Inimigo> inimigos = [];
+  final List<Alvo> alvosExtras = [];
+
+  Iterable<Alvo> get alvos sync* {
+    yield* inimigos;
+    yield* alvosExtras;
+  }
+
   final List<Mola> molas = [];
   final List<Bandeira> checkpoints = [];
-  late final Bandeira chegada;
+  Bandeira? chegada;
 
   final List<Heroi> herois = [];
 
@@ -100,6 +112,32 @@ class Fase extends World with HasGameReference<AventuraJogo> {
             alturaEmBlocos: (o.height / tamanhoBloco).round(),
             chegada: true,
           );
+        case 'coracao':
+          coracoes.add(Coracao(posicao: pos));
+        case 'plataforma_h':
+          plataformas.add(
+            PlataformaMovel(
+              inicio: pos,
+              fim: Vector2(o.x + o.width - tamanhoBloco * 3, o.y),
+              tileEsquerda: dados.tilePlataforma,
+            ),
+          );
+        case 'plataforma_v':
+          plataformas.add(
+            PlataformaMovel(
+              inicio: Vector2(o.x, o.y + o.height - tamanhoBloco),
+              fim: pos,
+              tileEsquerda: dados.tilePlataforma,
+            ),
+          );
+        case 'chefe':
+          final arena = Rect.fromLTWH(o.x, o.y, o.width, o.height);
+          final novo = Chefe(
+            arena: arena,
+            vidaMaxima: 20 + 8 * (classes.length - 1),
+          );
+          chefe = novo;
+          alvosExtras.add(novo);
         case 'gelo' || 'rachada':
           final bloco = BlocoDeElemento(
             tipo: o.name == 'gelo'
@@ -128,6 +166,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       }
     }
     addAll([
+      ...plataformas,
       ..._blocosDeElemento.values,
       ...fogueiras,
       ...moedas,
@@ -135,7 +174,9 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       ...inimigos,
       ...molas,
       ...checkpoints,
-      chegada,
+      ...coracoes,
+      ?chegada,
+      ?chefe,
     ]);
 
     pontoDeRetorno = inicio ?? Vector2(tamanhoBloco * 2, tamanhoBloco * 8);
@@ -321,7 +362,39 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       }
     }
 
-    if (chegada.toRect().overlaps(corpo)) {
+    final chefe = this.chefe;
+    if (chefe != null &&
+        chefe.vivo &&
+        chefe.toRect().deflate(3).overlaps(corpo)) {
+      final pesAntes = corpo.bottom - heroi.velocidade.y * dt;
+      if (heroi.velocidade.y > 0 && pesAntes <= chefe.toRect().top + 8) {
+        chefe.receberGolpe(Golpe.pisao);
+        heroi.quicarNoInimigo();
+      } else if (chefe.machucaAoEncostar) {
+        heroi.levarDano(origemX: chefe.center.x);
+      }
+    }
+
+    for (final orbe in alvosExtras.whereType<Orbe>()) {
+      if (orbe.vivo && orbe.toRect().deflate(2).overlaps(corpo)) {
+        orbe.estourar();
+        heroi.levarDano(origemX: orbe.position.x);
+      }
+    }
+
+    final coracoesDoJogador = game.coracoesDosJogadores[heroi.jogador];
+    for (final coracao in coracoes) {
+      if (!coracao.coletado &&
+          coracoesDoJogador.value < game.coracoesMaximos[heroi.jogador] &&
+          coracao.toRect().deflate(2).overlaps(corpo)) {
+        coracao.coletar();
+        coracoesDoJogador.value++;
+        Sons.tocar('checkpoint', volume: 0.6);
+      }
+    }
+
+    final chegada = this.chegada;
+    if (chegada != null && chegada.toRect().overlaps(corpo)) {
       terminou = true;
       chegada.ativar();
       game.venceu();
@@ -358,7 +431,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
         return;
       }
       var acertou = false;
-      for (final inimigo in inimigos) {
+      for (final inimigo in alvos) {
         if (inimigo.vivo && inimigo.toRect().overlaps(area)) {
           inimigo.receberGolpe(Golpe.terra, deX: heroi.center.x);
           acertou = true;
@@ -438,7 +511,18 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     pedra.removeFromParent();
   }
 
+  void chefeDerrotado() {
+    if (terminou) {
+      return;
+    }
+    terminou = true;
+    game.venceu();
+  }
+
   void voltarAoPontoDeRetorno({Heroi? apenas}) {
+    if (apenas == null) {
+      chefe?.reiniciarAtaque();
+    }
     for (final heroi in herois) {
       if (apenas == null || heroi == apenas) {
         heroi.reaparecer(_posicaoDoHeroi(pontoDeRetorno, heroi.jogador));

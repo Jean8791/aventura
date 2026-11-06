@@ -16,7 +16,13 @@ class TelaVitoria extends StatelessWidget {
     final encontrados = Progresso.diamantes(jogo.faseAtual).length;
     final faltam = jogo.totalDeDiamantes - encontrados;
     return _Painel(
-      titulo: ultima ? 'Você terminou a aventura!' : 'Você conseguiu!',
+      titulo: jogo.fase?.dados.chefe == true
+          ? jogo.jogadores > 1
+                ? 'Vocês venceram o Feiticeiro!'
+                : 'Você venceu o Feiticeiro!'
+          : ultima
+          ? 'Você terminou a aventura!'
+          : 'Você conseguiu!',
       icone: Icons.emoji_events_rounded,
       corIcone: const Color(0xFFFFC93C),
       texto: 'Moedas: ${jogo.moedas.value} de ${jogo.totalDeMoedas}',
@@ -101,7 +107,9 @@ class TelaDerrota extends StatelessWidget {
       titulo: 'Ops! Vamos de novo?',
       icone: Icons.favorite_rounded,
       corIcone: const Color(0xFFFF4D6D),
-      texto: 'Você volta da última bandeira.',
+      texto: jogo.fase?.dados.chefe == true
+          ? 'O Feiticeiro continua machucado!'
+          : 'Você volta da última bandeira.',
       botoes: [
         BotaoGrande(
           autofocus: true,

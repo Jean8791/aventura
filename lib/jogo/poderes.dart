@@ -5,11 +5,11 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/particles.dart';
 
+import 'alvo.dart';
 import 'aventura_jogo.dart';
 import 'classes.dart';
 import 'fase.dart';
 import 'heroi.dart';
-import 'inimigo.dart';
 import 'sons.dart';
 
 final _aleatorio = Random();
@@ -18,13 +18,13 @@ abstract class Poder extends PositionComponent
     with HasGameReference<AventuraJogo> {
   Poder({super.position, super.size, super.anchor});
 
-  final Set<Inimigo> _atingidos = {};
+  final Set<Alvo> _atingidos = {};
 
   Fase get fase => game.fase!;
 
   int acertarInimigos(Rect area, Golpe golpe, {bool atravessa = true}) {
     var acertos = 0;
-    for (final inimigo in fase.inimigos) {
+    for (final inimigo in fase.alvos) {
       if (!inimigo.vivo || _atingidos.contains(inimigo)) {
         continue;
       }

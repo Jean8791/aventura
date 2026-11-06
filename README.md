@@ -56,6 +56,12 @@ Inimigos e fraquezas:
 | 1. Floresta | grama | buracos, mola, escadinhas |
 | 2. Montanha Gelada | neve | gelo, parede rachada |
 | 3. Deserto de Fogo | areia | fogueiras, túnel em chamas, parede rachada |
+| 4. Caverna de Cristal | caverna | plataformas que se movem, teto baixo, gelo, parede rachada, fogueira, corações |
+| 5. Covil do Feiticeiro | arena | o chefão |
+
+### O chefão: Feiticeiro das Sombras
+
+Ele flutua lançando orbes (dá para desviar ou destruí-los com qualquer poder), treme como aviso e dá uma investida pelo chão. Quando bate na parede, fica tonto por alguns segundos: é a hora de atacar, porque tonto ele leva dano dobrado. A cada três ciclos chama um slime, e na metade da vida solta um coração. Todo herói consegue machucá-lo, inclusive pulando em cima dele. Se os heróis perderem, o dano que ele já levou continua valendo. A luta tem música própria.
 
 O caminho até a bandeira é possível com qualquer herói. Cada fase esconde 3 diamantes, e muitos deles ficam atrás de obstáculos de elemento, então cada herói alcança uma parte:
 
@@ -93,7 +99,7 @@ As fases ficam em `assets/tiles/fase1.tmx`, `fase2.tmx` e `fase3.tmx`, no format
 
 - camada **terreno**: blocos em que o herói pisa e bate;
 - camada **decoracao**: plantas, placas e árvores, sem colisão;
-- camada **objetos**: retângulos com nome `inicio`, `moeda`, `diamante`, `mola`, `checkpoint`, `chegada`, um inimigo (`slime`, `slime_fogo`, `morcego`, `golem`) ou um obstáculo (`gelo`, `rachada`, `fogueira`).
+- camada **objetos**: retângulos com nome `inicio`, `moeda`, `diamante`, `coracao`, `mola`, `checkpoint`, `chegada`, um inimigo (`slime`, `slime_fogo`, `morcego`, `golem`), um obstáculo (`gelo`, `rachada`, `fogueira`), uma plataforma móvel (`plataforma_h` ou `plataforma_v`, que vai e volta dentro do retângulo) ou `chefe` (o retângulo é a arena).
 
 Abra o arquivo no Tiled, desenhe com os blocos de `blocos.png`, salve e rode o jogo de novo.
 
@@ -101,7 +107,7 @@ As fases foram geradas por `ferramentas/gerar_fases.py`. Rodar o script de novo 
 
 ## Música
 
-A música de fundo é uma composição original, gerada por `ferramentas/gerar_musica.py` (Python puro, sem dependências): melodia 8-bit, baixo e bateria, em Dó maior a 150 BPM, com 16 compassos que repetem sem emenda. Para mudar a música, edite as linhas de `MELODIA` e `ACORDES` no script e rode:
+As músicas são composições originais, geradas por `ferramentas/gerar_musica.py` (Python puro, sem dependências): melodia 8-bit, baixo e bateria, com 16 compassos que repetem sem emenda. A das fases é em Dó maior a 150 BPM; a do chefão, em Lá menor a 168 BPM. Para mudar, edite `MELODIA`/`ACORDES` (ou `MELODIA_CHEFE`/`ACORDES_CHEFE`) no script e rode:
 
 ```bash
 python3 ferramentas/gerar_musica.py
@@ -120,6 +126,8 @@ lib/
     poderes.dart       espadada, raio, bola de fogo, bolha e pedra mágica
     inimigo.dart       slime, slime de fogo, morcego e golem, com vida e fraquezas
     obstaculos.dart    gelo, parede rachada, fogueira e diamante
+    chefe.dart         Feiticeiro das Sombras e seus orbes
+    alvo.dart          o que pode receber golpe dos poderes (inimigos, chefe, orbes)
     fases.dart         lista das fases (mapa, fundo e cor do céu)
     itens.dart         moeda, mola e bandeira
     controle.dart      toque, teclado, controle remoto e gamepad de um jogador

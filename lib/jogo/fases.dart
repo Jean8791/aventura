@@ -8,6 +8,9 @@ class DadosDaFase {
     required this.ceu,
     required this.icone,
     required this.cor,
+    this.musica = 'musica_fase1.wav',
+    this.tilePlataforma = 1,
+    this.chefe = false,
   });
 
   final String nome;
@@ -16,6 +19,9 @@ class DadosDaFase {
   final Color ceu;
   final IconData icone;
   final Color cor;
+  final String musica;
+  final int tilePlataforma;
+  final bool chefe;
 }
 
 const fases = [
@@ -42,5 +48,25 @@ const fases = [
     ceu: Color(0xFFFBC97B),
     icone: Icons.local_fire_department_rounded,
     cor: Color(0xFFFF8A3D),
+  ),
+  DadosDaFase(
+    nome: 'Caverna de Cristal',
+    arquivo: 'fase4.tmx',
+    fundo: 'fundo_caverna.png',
+    ceu: Color(0xFF251F3D),
+    icone: Icons.diamond_rounded,
+    cor: Color(0xFFB794F6),
+    tilePlataforma: 141,
+  ),
+  DadosDaFase(
+    nome: 'Covil do Feiticeiro',
+    arquivo: 'fase5.tmx',
+    fundo: 'fundo_caverna.png',
+    ceu: Color(0xFF1A1530),
+    icone: Icons.auto_fix_high_rounded,
+    cor: Color(0xFFFF4FD8),
+    musica: 'musica_chefe.wav',
+    tilePlataforma: 141,
+    chefe: true,
   ),
 ];

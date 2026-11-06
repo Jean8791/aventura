@@ -11,6 +11,9 @@ Camadas de cada mapa:
                inicio, moeda, diamante, mola, checkpoint, chegada
                slime, slime_fogo, morcego, golem
                gelo (o fogo derrete), rachada (espada e raio quebram), fogueira (a água apaga)
+               coracao (recupera um coração)
+               plataforma_h e plataforma_v (plataforma que vai e volta dentro do retângulo)
+               chefe (o retângulo é a arena do Feiticeiro das Sombras)
 
 Regra de desenho: o caminho principal precisa ser possível com qualquer herói. Os obstáculos
 de elemento guardam os diamantes, e cada herói alcança uma parte deles.
@@ -26,6 +29,7 @@ TEMAS = {
     "grama": {"plataforma": 0, "chao": 20},
     "neve": {"plataforma": 80, "chao": 100},
     "areia": {"plataforma": 40, "chao": 60},
+    "caverna": {"plataforma": 140, "chao": 120},
 }
 
 
@@ -41,6 +45,14 @@ class Mapa:
         for c in range(c0, c1 + 1):
             for r in range(topo, ALTURA):
                 self.solido[(c, r)] = "chao"
+
+    def teto(self, c0, c1, ate_linha):
+        for c in range(c0, c1 + 1):
+            for r in range(0, ate_linha + 1):
+                self.solido[(c, r)] = "teto"
+
+    def plataforma_movel(self, sentido, c0, r0, c1, r1):
+        self.obj(f"plataforma_{sentido}", c0, r0, c1 - c0 + 1, r1 - r0 + 1)
 
     def plataforma(self, c0, c1, linha):
         for c in range(c0, c1 + 1):
@@ -99,6 +111,10 @@ class Mapa:
         dir_ = self.solido.get((c + 1, r)) == tipo
         if tipo == "plataforma":
             base = self.tema["plataforma"]
+            return base + (2 if esq and dir_ else 1 if dir_ else 3 if esq else 0) + 1
+        if tipo == "teto":
+            abaixo = self.solido.get((c, r + 1)) == "teto"
+            base = 120 if abaixo else 140
             return base + (2 if esq and dir_ else 1 if dir_ else 3 if esq else 0) + 1
         acima = self.solido.get((c, r - 1)) == "chao"
         base = 120 if acima else self.tema["chao"]
@@ -342,7 +358,80 @@ def fase3():
     m.salvar("fase3.tmx")
 
 
+def fase4():
+    m = Mapa(180, "caverna")
+
+    m.teto(0, 179, 0)
+    m.chao(0, 24)
+    m.teto(0, 20, 2)
+    m.obj("inicio", 9, TOPO - 2)
+    m.decor(12, TOPO - 1, 85)
+    m.moedas(14, 18, TOPO - 3)
+    m.obj("slime", 21, TOPO - 1)
+
+    m.plataforma_movel("h", 26, TOPO - 2, 33, TOPO - 2)
+    m.moedas(27, 32, TOPO - 4)
+
+    m.chao(35, 58)
+    m.obj("morcego", 39, 6)
+    m.cofre(43, 47, "gelo", lado="direita")
+    m.moedas(49, 52, TOPO - 2)
+    m.obj("golem", 54, TOPO - 1)
+    m.obj("checkpoint", 57, TOPO - 2, 1, 2)
+
+    m.plataforma_movel("v", 61, 6, 63, TOPO - 1)
+    m.plataforma_movel("h", 65, 6, 72, 6)
+    m.moedas(66, 71, 4)
+    m.obj("coracao", 69, 3)
+    m.chao(75, 100)
+    m.teto(78, 90, 5)
+    m.moedas(79, 89, TOPO - 2)
+    m.obj("slime_fogo", 86, TOPO - 1)
+    m.cofre(92, 96, "rachada", lado="esquerda")
+
+    m.plataforma_movel("h", 102, TOPO - 2, 109, TOPO - 2)
+    m.chao(111, 140)
+    m.obj("morcego", 114, 8)
+    m.plataforma(119, 121, TOPO - 6)
+    m.obj("diamante", 120, TOPO - 7)
+    m.obj("fogueira", 126, TOPO - 1)
+    m.obj("golem", 131, TOPO - 1)
+    m.obj("slime_fogo", 137, TOPO - 1)
+
+    m.plataforma_movel("v", 142, 6, 144, TOPO - 1)
+    m.moedas(143, 143, 4)
+    m.chao(147, 179)
+    m.obj("coracao", 150, TOPO - 1)
+    m.escada(157, 5)
+    for c in range(162, 165):
+        for h in range(5):
+            m.bloco(c, TOPO - 1 - h)
+    m.obj("chegada", 171, TOPO - 3, 1, 3)
+    m.salvar("fase4.tmx")
+
+
+def fase5():
+    m = Mapa(40, "caverna")
+
+    m.teto(0, 39, 1)
+    m.chao(0, 39)
+    for c in (0, 39):
+        for r in range(2, TOPO):
+            m.bloco(c, r)
+    m.obj("inicio", 4, TOPO - 2)
+    m.plataforma(6, 9, 8)
+    m.plataforma(30, 33, 8)
+    m.plataforma(17, 22, 5)
+    m.obj("coracao", 7, 7)
+    m.obj("coracao", 32, 7)
+    m.moedas(18, 21, 4)
+    m.obj("chefe", 2, 3, 36, TOPO - 3)
+    m.salvar("fase5.tmx")
+
+
 if __name__ == "__main__":
     fase1()
     fase2()
     fase3()
+    fase4()
+    fase5()

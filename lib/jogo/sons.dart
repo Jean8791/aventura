@@ -20,7 +20,8 @@ class Sons {
     'bolha.ogg': 3,
     'acerto.ogg': 3,
   };
-  static const _musica = 'musica_fase1.wav';
+  static const _musicas = ['musica_fase1.wav', 'musica_chefe.wav'];
+  static String _musica = 'musica_fase1.wav';
   static const _volumeDaMusica = 0.35;
 
   static final Map<String, List<AudioPlayer>> _tocadores = {};
@@ -33,7 +34,7 @@ class Sons {
 
   static Future<void> carregar() async {
     FlameAudio.bgm.initialize();
-    await FlameAudio.audioCache.loadAll([..._efeitos.keys, _musica]);
+    await FlameAudio.audioCache.loadAll([..._efeitos.keys, ..._musicas]);
     final contexto = AudioContextConfig(
       focus: AudioContextConfigFocus.mixWithOthers,
     ).build();
@@ -71,7 +72,10 @@ class Sons {
         .catchError((_) {});
   }
 
-  static void iniciarMusica() {
+  static void iniciarMusica([String? arquivo]) {
+    if (arquivo != null) {
+      _musica = arquivo;
+    }
     _musicaTocando = true;
     if (musicaLigada.value) {
       FlameAudio.bgm.play(_musica, volume: _volumeDaMusica);

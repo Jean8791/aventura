@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/particles.dart';
 
+import 'alvo.dart';
 import 'aventura_jogo.dart';
 import 'classes.dart';
 import 'fase.dart';
@@ -57,7 +58,9 @@ enum TipoDeInimigo {
   }
 }
 
-class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
+class Inimigo extends PositionComponent
+    with HasGameReference<AventuraJogo>
+    implements Alvo {
   Inimigo({required this.tipo, required Vector2 posicao})
     : vida = tipo.vida,
       _origem = posicao.clone(),
@@ -76,6 +79,7 @@ class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
   final Vector2 _origem;
   final Vector2 velocidade = Vector2.zero();
   int vida;
+  @override
   bool vivo = true;
   double _direcao = -1;
   double _preso = 0;
@@ -168,6 +172,7 @@ class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
     _direcao = center.x < x ? -1 : 1;
   }
 
+  @override
   void receberGolpe(Golpe golpe, {double? deX}) {
     if (!vivo) {
       return;
