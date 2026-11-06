@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 
@@ -112,6 +114,26 @@ class Fase extends World with HasGameReference<AventuraJogo> {
   }
 
   ResultadoMovimento mover(
+    Vector2 posicao,
+    Vector2 tamanho,
+    Vector2 velocidade,
+    double dt,
+  ) {
+    final resultado = ResultadoMovimento();
+    const passoMaximo = 6.0;
+    final distancia = max(velocidade.x.abs(), velocidade.y.abs()) * dt;
+    final passos = max(1, (distancia / passoMaximo).ceil());
+    final dtDoPasso = dt / passos;
+    for (var i = 0; i < passos; i++) {
+      final parcial = _moverUmPasso(posicao, tamanho, velocidade, dtDoPasso);
+      resultado.noChao |= parcial.noChao;
+      resultado.bateuParede |= parcial.bateuParede;
+      resultado.bateuTeto |= parcial.bateuTeto;
+    }
+    return resultado;
+  }
+
+  ResultadoMovimento _moverUmPasso(
     Vector2 posicao,
     Vector2 tamanho,
     Vector2 velocidade,

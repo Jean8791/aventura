@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flame/components.dart';
 import 'package:flame/sprite.dart';
 
@@ -54,6 +56,7 @@ class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
     if (distancia > 400) {
       return;
     }
+    dt = min(dt, 1 / 30);
 
     velocidade.x = _direcao * _velocidade;
     velocidade.y += _gravidade * dt;
