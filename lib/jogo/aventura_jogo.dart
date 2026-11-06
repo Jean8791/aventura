@@ -32,6 +32,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   static const overlayControles = 'controles';
   static const overlayVitoria = 'vitoria';
   static const overlayDerrota = 'derrota';
+  static const overlayPausa = 'pausa';
 
   final List<Controle> controles = [Controle(), Controle()];
   final EntradaDeControles _entrada = EntradaDeControles();
@@ -111,7 +112,8 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       !overlays.isActive(overlayEscolha) &&
       !overlays.isActive(overlayFases) &&
       !overlays.isActive(overlayVitoria) &&
-      !overlays.isActive(overlayDerrota);
+      !overlays.isActive(overlayDerrota) &&
+      !overlays.isActive(overlayPausa);
 
   void _abrirMenu(String overlay) {
     for (final c in controles) {
@@ -129,9 +131,52 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       overlayFases,
       overlayVitoria,
       overlayDerrota,
+      overlayPausa,
       overlayHud,
       overlayControles,
     ]);
+    resumeEngine();
+  }
+
+  void pausar() {
+    if (!_jogando) {
+      return;
+    }
+    pauseEngine();
+    Sons.pausarMusica();
+    overlays.remove(overlayControles);
+    _abrirMenu(overlayPausa);
+  }
+
+  void continuar() {
+    overlays.remove(overlayPausa);
+    overlays.add(overlayControles);
+    resumeEngine();
+    Sons.retomarMusica();
+    _focarNoJogo();
+  }
+
+  void voltar() {
+    if (_jogando) {
+      pausar();
+    } else if (overlays.isActive(overlayPausa)) {
+      continuar();
+    } else if (overlays.isActive(overlayVitoria) ||
+        overlays.isActive(overlayDerrota)) {
+      abrirEscolhaDeFase();
+    } else if (overlays.isActive(overlayFases)) {
+      voltarParaEscolha();
+    } else if (overlays.isActive(overlayEscolha)) {
+      if (jogadorEscolhendo == 1) {
+        _abrirEscolhaDeHeroi(0);
+      } else {
+        abrirEscolhaDeModo();
+      }
+    } else if (overlays.isActive(overlayEntrar)) {
+      abrirEscolhaDeModo();
+    } else {
+      SystemNavigator.pop();
+    }
   }
 
   void _receberControle(EventoDeControle evento) {
@@ -398,6 +443,14 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     KeyEvent event,
     Set<LogicalKeyboardKey> keysPressed,
   ) {
+    if (event is KeyDownEvent &&
+        _jogando &&
+        (event.logicalKey == LogicalKeyboardKey.gameButtonStart ||
+            event.logicalKey == LogicalKeyboardKey.escape ||
+            event.logicalKey == LogicalKeyboardKey.keyP)) {
+      pausar();
+      return KeyEventResult.handled;
+    }
     if (!_jogando || !controle.ehTeclaDoJogo(event.logicalKey)) {
       return KeyEventResult.ignored;
     }

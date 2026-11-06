@@ -124,7 +124,8 @@ class Inimigo extends PositionComponent with HasGameReference<AventuraJogo> {
 
     if (_piscando > 0) {
       _piscando = max(0, _piscando - dt);
-      _visual.paint.colorFilter = (_piscando * 20).floor().isEven
+      _visual.paint.colorFilter =
+          _piscando > 0 && (_piscando * 20).floor().isOdd
           ? const ColorFilter.mode(Color(0xFFFFFFFF), BlendMode.srcATop)
           : null;
     }

@@ -24,7 +24,18 @@ class Hud extends StatelessWidget {
         children: [
           Align(
             alignment: Alignment.topRight,
-            child: ExcludeFocus(child: _BotaoDeSom()),
+            child: ExcludeFocus(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _BotaoRedondo(
+                    icone: Icons.pause_rounded,
+                    aoApertar: jogo.pausar,
+                  ),
+                  _BotaoDeSom(),
+                ],
+              ),
+            ),
           ),
           Align(
             alignment: Alignment.topLeft,
@@ -154,6 +165,30 @@ class _CoracoesDoJogador extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BotaoRedondo extends StatelessWidget {
+  const _BotaoRedondo({required this.icone, required this.aoApertar});
+
+  final IconData icone;
+  final VoidCallback aoApertar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 0, 12),
+      child: Material(
+        color: const Color(0x993B2B4F),
+        shape: const CircleBorder(),
+        child: IconButton(
+          iconSize: 30,
+          color: Colors.white,
+          onPressed: aoApertar,
+          icon: Icon(icone),
+        ),
+      ),
     );
   }
 }

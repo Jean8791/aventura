@@ -17,6 +17,7 @@ Roda em celular e tablet Android e também em TV box Android, com controle remot
 - A bandeira do meio da fase guarda o progresso: depois de perder os corações, o jogo volta dela.
 - A mola joga o herói lá para cima.
 - O botão de nota musical, no canto de cima, liga e desliga a música.
+- Para pausar: botão ⏸ no canto de cima, botão Voltar do celular ou do controle remoto, ou Start no controle Bluetooth. Na pausa dá para continuar, trocar de herói ou escolher outra fase.
 
 ## Dois jogadores
 

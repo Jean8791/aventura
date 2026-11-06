@@ -11,6 +11,7 @@ import 'telas/escolha_modo.dart';
 import 'telas/escolha_heroi.dart';
 import 'telas/fim_de_fase.dart';
 import 'telas/hud.dart';
+import 'telas/pausa.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,23 +40,33 @@ class _AventuraAppState extends State<AventuraApp> {
       title: 'Aventura',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true, fontFamily: 'Roboto'),
-      home: Scaffold(
-        body: GameWidget<AventuraJogo>(
-          game: _jogo,
-          focusNode: _jogo.foco,
-          autofocus: false,
-          overlayBuilderMap: {
-            AventuraJogo.overlayEscolha: (_, jogo) => EscolhaHeroi(jogo: jogo),
-            AventuraJogo.overlayModo: (_, jogo) => EscolhaModo(jogo: jogo),
-            AventuraJogo.overlayEntrar: (_, jogo) =>
-                EntrarJogadores(jogo: jogo),
-            AventuraJogo.overlayFases: (_, jogo) => EscolhaFase(jogo: jogo),
-            AventuraJogo.overlayHud: (_, jogo) => Hud(jogo: jogo),
-            AventuraJogo.overlayControles: (_, jogo) =>
-                ControlesToque(jogo: jogo),
-            AventuraJogo.overlayVitoria: (_, jogo) => TelaVitoria(jogo: jogo),
-            AventuraJogo.overlayDerrota: (_, jogo) => TelaDerrota(jogo: jogo),
-          },
+      home: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (jaSaiu, _) {
+          if (!jaSaiu) {
+            _jogo.voltar();
+          }
+        },
+        child: Scaffold(
+          body: GameWidget<AventuraJogo>(
+            game: _jogo,
+            focusNode: _jogo.foco,
+            autofocus: false,
+            overlayBuilderMap: {
+              AventuraJogo.overlayEscolha: (_, jogo) =>
+                  EscolhaHeroi(jogo: jogo),
+              AventuraJogo.overlayModo: (_, jogo) => EscolhaModo(jogo: jogo),
+              AventuraJogo.overlayEntrar: (_, jogo) =>
+                  EntrarJogadores(jogo: jogo),
+              AventuraJogo.overlayFases: (_, jogo) => EscolhaFase(jogo: jogo),
+              AventuraJogo.overlayPausa: (_, jogo) => TelaPausa(jogo: jogo),
+              AventuraJogo.overlayHud: (_, jogo) => Hud(jogo: jogo),
+              AventuraJogo.overlayControles: (_, jogo) =>
+                  ControlesToque(jogo: jogo),
+              AventuraJogo.overlayVitoria: (_, jogo) => TelaVitoria(jogo: jogo),
+              AventuraJogo.overlayDerrota: (_, jogo) => TelaDerrota(jogo: jogo),
+            },
+          ),
         ),
       ),
     );
