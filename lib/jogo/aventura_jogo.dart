@@ -64,6 +64,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     Progresso.heroiDoJogador2.clamp(0, classes.length - 1),
   ];
   int jogadorEscolhendo = 0;
+  DateTime _entradaAberta = DateTime.now();
   int faseAtual = Progresso.ultimaFase.clamp(0, fases.length - 1);
 
   Fase? fase;
@@ -204,7 +205,10 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void _ligarControle(EventoDeControle evento) {
-    if (evento.eixo || !evento.apertou) {
+    if (evento.eixo ||
+        !evento.apertou ||
+        !evento.confirma ||
+        DateTime.now().difference(_entradaAberta).inMilliseconds < 400) {
       return;
     }
     final origens = [...origensDosJogadores.value];
@@ -234,6 +238,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     overlays.remove(overlayModo);
     if (quantidade == 2) {
       origensDosJogadores.value = [null, null];
+      _entradaAberta = DateTime.now();
       _abrirMenu(overlayEntrar);
     } else {
       _abrirEscolhaDeHeroi(0);

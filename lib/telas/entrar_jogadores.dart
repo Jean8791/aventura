@@ -23,6 +23,15 @@ class EntrarJogadores extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text('Peguem os controles!', style: estiloTitulo),
+              const SizedBox(height: 6),
+              const Text(
+                'Cada jogador aperta OK (ou A) no próprio controle',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
               const SizedBox(height: 22),
               Wrap(
                 spacing: 24,
@@ -34,21 +43,31 @@ class EntrarJogadores extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              ExcludeFocus(
-                child: TextButton.icon(
-                  onPressed: jogo.abrirEscolhaDeModo,
-                  icon: const Icon(
-                    Icons.arrow_back_rounded,
-                    color: Colors.white,
-                  ),
-                  label: const Text(
-                    'Voltar',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
+              BotaoGrande(
+                cor: const Color(0xFFE8F4FF),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                aoApertar: jogo.voltar,
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 26,
+                      color: Color(0xFF3B2B4F),
                     ),
-                  ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Voltar',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF3B2B4F),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -97,7 +116,7 @@ class EntrarJogadores extends StatelessWidget {
           Text(
             pronto
                 ? 'Pronto!'
-                : (vez ? 'Aperte um botão\nno seu controle' : 'Aguarde...'),
+                : (vez ? 'Aperte OK\nno seu controle' : 'Aguarde...'),
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 17,

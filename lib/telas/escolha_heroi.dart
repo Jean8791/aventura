@@ -63,25 +63,28 @@ class EscolhaHeroi extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            ExcludeFocus(
-              child: TextButton.icon(
-                onPressed: jogo.abrirEscolhaDeModo,
-                icon: Icon(
-                  jogo.jogadores == 1
-                      ? Icons.person_rounded
-                      : Icons.people_alt_rounded,
-                  color: Colors.white,
-                ),
-                label: Text(
-                  jogo.jogadores == 1
-                      ? '1 jogador · trocar'
-                      : '2 jogadores · trocar',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
+            BotaoGrande(
+              cor: const Color(0xFFE8F4FF),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              aoApertar: jogo.voltar,
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.arrow_back_rounded,
+                    size: 26,
+                    color: Color(0xFF3B2B4F),
                   ),
-                ),
+                  SizedBox(width: 8),
+                  Text(
+                    'Voltar',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF3B2B4F),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

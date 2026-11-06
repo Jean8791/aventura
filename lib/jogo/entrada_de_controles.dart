@@ -9,6 +9,7 @@ class EventoDeControle {
     required this.origem,
     required this.acao,
     required this.apertou,
+    this.confirma = false,
   }) : x = 0,
        y = 0,
        eixo = false;
@@ -18,12 +19,14 @@ class EventoDeControle {
     required this.x,
     required this.y,
   }) : acao = null,
+       confirma = false,
        apertou = false,
        eixo = true;
 
   final String origem;
   final Acao? acao;
   final bool apertou;
+  final bool confirma;
   final bool eixo;
   final double x;
   final double y;
@@ -34,6 +37,7 @@ class EntradaDeControles {
 
   static const _teclaVoltar = 4;
   static const _ladoEsquerdoDoTeclado = {29, 32, 51, 47};
+  static const _teclasDeConfirmar = {23, 66, 62, 160, 96, 99, 108, 51};
 
   static Acao? acaoDoCodigo(int codigo) => switch (codigo) {
     21 || 29 => Acao.esquerda,
@@ -84,6 +88,7 @@ class EntradaDeControles {
         origem: origemDe(dispositivo, codigo),
         acao: acaoDoCodigo(codigo),
         apertou: dados['apertou'] == true,
+        confirma: _teclasDeConfirmar.contains(codigo),
       ),
     );
   }
