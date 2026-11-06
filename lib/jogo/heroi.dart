@@ -1,20 +1,19 @@
 import 'dart:math';
 
 import 'package:flame/components.dart';
-import 'package:flame/sprite.dart';
 
 import 'aventura_jogo.dart';
+import 'classes.dart';
 import 'fase.dart';
+import 'poderes.dart';
 import 'sons.dart';
 
-enum EstadoHeroi { parado, andando, pulando }
-
 class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
-  Heroi({required this.indiceSprite, required Vector2 posicao})
+  Heroi({required this.classe, required Vector2 posicao})
     : super(position: posicao, size: Vector2(largura, altura));
 
-  static const double largura = 14;
-  static const double altura = 18;
+  static const double largura = 12;
+  static const double altura = 16;
 
   static const double _gravidade = 1000;
   static const double _velocidadeDoPulo = 400;
@@ -28,8 +27,11 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   static const double _tempoDoBufferDePulo = 0.15;
   static const double _tempoInvencivel = 1.5;
 
-  final int indiceSprite;
+  final ClasseDeHeroi classe;
   final Vector2 velocidade = Vector2.zero();
+  double direcao = 1;
+  double _recarga = 0;
+  double _passos = 0;
 
   bool noChao = false;
   double _coyote = 0;
@@ -38,26 +40,15 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   bool _congelado = false;
   bool _puloCortavel = false;
 
-  late final SpriteAnimationGroupComponent<EstadoHeroi> _visual;
+  late final SpriteComponent _visual;
 
   @override
   Future<void> onLoad() async {
-    final folha = SpriteSheet(
-      image: game.images.fromCache('personagens.png'),
-      srcSize: Vector2.all(24),
-    );
-    final a = folha.getSpriteById(indiceSprite);
-    final b = folha.getSpriteById(indiceSprite + 1);
-    _visual = SpriteAnimationGroupComponent<EstadoHeroi>(
-      animations: {
-        EstadoHeroi.parado: SpriteAnimation.spriteList([a], stepTime: 1),
-        EstadoHeroi.andando: SpriteAnimation.spriteList([a, b], stepTime: 0.14),
-        EstadoHeroi.pulando: SpriteAnimation.spriteList([b], stepTime: 1),
-      },
-      current: EstadoHeroi.parado,
-      size: Vector2.all(24),
+    _visual = SpriteComponent(
+      sprite: Sprite(game.images.fromCache(classe.imagem)),
+      size: Vector2.all(20),
       anchor: Anchor.bottomCenter,
-      position: Vector2(largura / 2, altura),
+      position: Vector2(largura / 2, altura + 1),
     );
     add(_visual);
   }
@@ -83,7 +74,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
         -_velocidadeMaxima,
         _velocidadeMaxima,
       );
-      _visual.scale.x = direcao;
+      this.direcao = direcao;
     } else if (noChao) {
       final reducao = _atrito * dt;
       velocidade.x = velocidade.x.abs() <= reducao
@@ -116,9 +107,16 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       _puloCortavel = false;
     }
 
+    _recarga = max(0, _recarga - dt);
+    if (controle.consumirPedidoDeAtaque() && _recarga == 0) {
+      _recarga = classe.recarga;
+      _usarPoder();
+    }
+
+    final pesAntes = position.y + size.y;
     velocidade.y = min(velocidade.y + _gravidade * dt, _quedaMaxima);
     final resultado = _fase.mover(position, size, velocidade, dt);
-    noChao = resultado.noChao;
+    noChao = resultado.noChao || _pousarEmInimigoPreso(pesAntes);
 
     if (_invencivel > 0) {
       _invencivel = max(0, _invencivel - dt);
@@ -127,11 +125,65 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
           : 0.35;
     }
 
-    _visual.current = !noChao
-        ? EstadoHeroi.pulando
-        : velocidade.x.abs() > 5
-        ? EstadoHeroi.andando
-        : EstadoHeroi.parado;
+    _animar(dt);
+  }
+
+  bool _pousarEmInimigoPreso(double pesAntes) {
+    if (velocidade.y < 0) {
+      return false;
+    }
+    for (final inimigo in _fase.inimigos) {
+      if (!inimigo.vivo || !inimigo.preso) {
+        continue;
+      }
+      final bolha = inimigo.areaDaBolha;
+      final topo = bolha.top + 2;
+      final pes = position.y + size.y;
+      final sobreposicaoX =
+          position.x + size.x > bolha.left + 2 && position.x < bolha.right - 2;
+      if (sobreposicaoX && pesAntes <= topo + 4 && pes >= topo - 1) {
+        position.y = topo - size.y;
+        velocidade.y = 0;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  void _animar(double dt) {
+    _visual.scale.x = direcao;
+    if (!noChao) {
+      _visual.position.y = altura + 1;
+      _visual.scale.y = velocidade.y < 0 ? 1.08 : 0.96;
+      return;
+    }
+    _visual.scale.y = 1;
+    if (velocidade.x.abs() > 5) {
+      _passos += dt * 14;
+      _visual.position.y = altura + 1 - (sin(_passos).abs() * 1.6);
+    } else {
+      _passos = 0;
+      _visual.position.y = altura + 1;
+    }
+  }
+
+  void _usarPoder() {
+    final frente = Vector2(center.x + direcao * 8, position.y + 7);
+    switch (classe.poder) {
+      case Golpe.espada:
+        _fase.add(Espadada(heroi: this));
+      case Golpe.raio:
+        Sons.tocar('raio', volume: 0.4);
+        _fase.add(Raio(origem: frente, direcao: direcao));
+      case Golpe.fogo:
+        _fase.add(BolaDeFogo(origem: frente, direcao: direcao));
+      case Golpe.agua:
+        _fase.add(Bolha(origem: frente, direcao: direcao));
+      case Golpe.terra:
+        _fase.criarPedraNaFrente(this);
+      case Golpe.pisao:
+        break;
+    }
   }
 
   void quicarNoInimigo() {
@@ -178,6 +230,8 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   void congelar() {
     _congelado = true;
     velocidade.setZero();
-    _visual.current = EstadoHeroi.parado;
+    _visual
+      ..scale.y = 1
+      ..position.y = altura + 1;
   }
 }

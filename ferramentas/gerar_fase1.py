@@ -7,7 +7,8 @@ pode ser ajustada à mão. Rodar este script de novo sobrescreve as edições fe
 Camadas do mapa:
   decoracao  blocos sem colisão (plantas, placas, árvores)
   terreno    blocos sólidos (chão, plataformas, caixas)
-  objetos    retângulos com nome: inicio, moeda, inimigo, mola, checkpoint, chegada
+  objetos    retângulos com nome: inicio, moeda, mola, checkpoint, chegada e os inimigos
+             slime, slime_fogo, morcego e golem
 """
 
 from pathlib import Path
@@ -77,7 +78,7 @@ chao(24, 41)
 decor(26, TOPO - 1, 125)
 plataforma(29, 32, 9)
 moedas(29, 32, 8)
-obj("inimigo", 36, TOPO - 1)
+obj("slime", 36, TOPO - 1)
 decor(39, TOPO - 1, 128)
 
 # Escadinha de caixas e buraco de 3 blocos
@@ -92,7 +93,7 @@ decor(53, TOPO - 1, 124)
 obj("mola", 55, TOPO - 1)
 moedas(54, 56, 2)
 moedas(54, 56, 3)
-obj("inimigo", 60, TOPO - 1)
+obj("slime_fogo", 60, TOPO - 1)
 
 # Bandeira do meio da fase
 obj("checkpoint", 62, TOPO - 2, 1, 2)
@@ -106,9 +107,10 @@ moedas(70, 72, 9)
 moedas(75, 77, 8)
 decor(82, TOPO - 1, 105)
 decor(83, TOPO - 1, 106)
-obj("inimigo", 88, TOPO - 1)
+obj("slime", 88, TOPO - 1)
+obj("morcego", 92, 7)
 arco_moedas(90, 8)
-obj("inimigo", 96, TOPO - 1)
+obj("slime_fogo", 97, TOPO - 1)
 decor(99, TOPO - 1, 126)
 
 # Morrinho de caixas
@@ -122,7 +124,8 @@ decor(115, TOPO - 1, 125)
 # Chão mais alto com plataformas
 chao(121, 132, topo=10)
 moedas(122, 131, 9)
-obj("inimigo", 127, 9)
+obj("golem", 127, 9)
+obj("morcego", 136, 5)
 plataforma(135, 137, 9)
 chao(133, LARGURA - 1)
 moedas(135, 137, 8)

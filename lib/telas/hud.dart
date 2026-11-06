@@ -37,11 +37,7 @@ class Hud extends StatelessWidget {
                       valueListenable: jogo.coracoes,
                       builder: (_, coracoes, _) => Row(
                         children: [
-                          for (
-                            var i = 0;
-                            i < AventuraJogo.coracoesIniciais;
-                            i++
-                          )
+                          for (var i = 0; i < jogo.coracoesMaximos; i++)
                             Icon(
                               i < coracoes
                                   ? Icons.favorite

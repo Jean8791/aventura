@@ -58,6 +58,8 @@ flutter:
   assets:
     - assets/images/
     - assets/images/herois/
+    - assets/images/inimigos/
+    - assets/images/poderes/
     - assets/tiles/
     - assets/audio/
 

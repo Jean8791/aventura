@@ -1,12 +1,15 @@
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame_tiled/flame_tiled.dart';
 
 import 'aventura_jogo.dart';
+import 'classes.dart';
 import 'heroi.dart';
 import 'inimigo.dart';
 import 'itens.dart';
+import 'poderes.dart';
 import 'sons.dart';
 
 const double tamanhoBloco = 18;
@@ -18,10 +21,13 @@ class ResultadoMovimento {
 }
 
 class Fase extends World with HasGameReference<AventuraJogo> {
-  Fase({required this.arquivo, required this.indiceHeroi});
+  Fase({required this.arquivo, required this.classe});
 
   final String arquivo;
-  final int indiceHeroi;
+  final ClasseDeHeroi classe;
+  final Set<(int, int)> _pedras = {};
+  final List<PedraMagica> _pedrasAtivas = [];
+  static const _maximoDePedras = 3;
 
   late final TiledComponent mapa;
   late final List<List<bool>> _solidos;
@@ -68,8 +74,6 @@ class Fase extends World with HasGameReference<AventuraJogo> {
           inicio = pos;
         case 'moeda':
           moedas.add(Moeda(posicao: pos));
-        case 'inimigo':
-          inimigos.add(Inimigo(posicao: pos));
         case 'mola':
           molas.add(Mola(posicao: pos));
         case 'checkpoint':
@@ -85,15 +89,17 @@ class Fase extends World with HasGameReference<AventuraJogo> {
             alturaEmBlocos: (o.height / tamanhoBloco).round(),
             chegada: true,
           );
+        default:
+          final tipo = TipoDeInimigo.peloNome(o.name);
+          if (tipo != null) {
+            inimigos.add(Inimigo(tipo: tipo, posicao: pos));
+          }
       }
     }
     addAll([...moedas, ...inimigos, ...molas, ...checkpoints, chegada]);
 
     pontoDeRetorno = inicio ?? Vector2(tamanhoBloco * 2, tamanhoBloco * 8);
-    heroi = Heroi(
-      indiceSprite: indiceHeroi,
-      posicao: _posicaoDoHeroi(pontoDeRetorno),
-    );
+    heroi = Heroi(classe: classe, posicao: _posicaoDoHeroi(pontoDeRetorno));
     add(heroi);
     game.totalDeMoedas = moedas.length;
   }
@@ -110,7 +116,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     if (linha < 0 || linha >= linhas) {
       return false;
     }
-    return _solidos[linha][coluna];
+    return _solidos[linha][coluna] || _pedras.contains((coluna, linha));
   }
 
   ResultadoMovimento mover(
@@ -212,14 +218,15 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     }
 
     for (final inimigo in inimigos) {
-      if (!inimigo.vivo || !inimigo.toRect().deflate(2).overlaps(corpo)) {
+      if (!inimigo.vivo ||
+          inimigo.preso ||
+          !inimigo.toRect().deflate(2).overlaps(corpo)) {
         continue;
       }
       final pesAntes = corpo.bottom - heroi.velocidade.y * dt;
       if (heroi.velocidade.y > 0 && pesAntes <= inimigo.toRect().top + 6) {
         inimigo.esmagar();
         heroi.quicarNoInimigo();
-        Sons.tocar('pisao');
       } else {
         inimigo.virarDeCostasPara(heroi.center.x);
         heroi.levarDano(origemX: inimigo.center.x);
@@ -243,6 +250,53 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     if (heroi.position.y > altura + 40) {
       heroi.caiuNoBuraco();
     }
+  }
+
+  void criarPedraNaFrente(Heroi heroi) {
+    final coluna = heroi.direcao > 0
+        ? ((heroi.position.x + heroi.size.x) / tamanhoBloco).ceil()
+        : (heroi.position.x / tamanhoBloco).floor() - 1;
+    final linhaDosPes = ((heroi.position.y + heroi.size.y - 1) / tamanhoBloco)
+        .floor();
+    for (final linha in [linhaDosPes, linhaDosPes - 1]) {
+      if (solido(coluna, linha)) {
+        continue;
+      }
+      final area = Rect.fromLTWH(
+        coluna * tamanhoBloco,
+        linha * tamanhoBloco,
+        tamanhoBloco,
+        tamanhoBloco,
+      );
+      if (area.overlaps(heroi.toRect())) {
+        return;
+      }
+      var acertou = false;
+      for (final inimigo in inimigos) {
+        if (inimigo.vivo && inimigo.toRect().overlaps(area)) {
+          inimigo.receberGolpe(Golpe.terra, deX: heroi.center.x);
+          acertou = true;
+        }
+      }
+      if (acertou) {
+        Sons.tocar('terra', volume: 0.5);
+        return;
+      }
+      if (_pedrasAtivas.length >= _maximoDePedras) {
+        removerPedra(_pedrasAtivas.first);
+      }
+      final pedra = PedraMagica(coluna: coluna, linha: linha);
+      _pedras.add((coluna, linha));
+      _pedrasAtivas.add(pedra);
+      add(pedra);
+      return;
+    }
+  }
+
+  void removerPedra(PedraMagica pedra) {
+    _pedras.remove((pedra.coluna, pedra.linha));
+    _pedrasAtivas.remove(pedra);
+    pedra.removeFromParent();
   }
 
   void voltarAoPontoDeRetorno() {

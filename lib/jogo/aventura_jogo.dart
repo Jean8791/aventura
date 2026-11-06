@@ -7,31 +7,16 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'classes.dart';
 import 'controle.dart';
 import 'fase.dart';
 import 'fundo.dart';
 import 'sons.dart';
 
-class OpcaoDeHeroi {
-  const OpcaoDeHeroi(this.nome, this.indiceSprite, this.imagem);
-  final String nome;
-  final int indiceSprite;
-  final String imagem;
-}
-
-const herois = [
-  OpcaoDeHeroi('Verde', 0, 'assets/images/herois/verde.png'),
-  OpcaoDeHeroi('Azul', 2, 'assets/images/herois/azul.png'),
-  OpcaoDeHeroi('Rosa', 4, 'assets/images/herois/rosa.png'),
-  OpcaoDeHeroi('Amarelo', 6, 'assets/images/herois/amarelo.png'),
-  OpcaoDeHeroi('Bege', 9, 'assets/images/herois/bege.png'),
-];
-
 class AventuraJogo extends FlameGame with KeyboardEvents {
   AventuraJogo() : super(camera: CameraComponent());
 
   static const double alturaVisivel = 15 * tamanhoBloco;
-  static const int coracoesIniciais = 3;
 
   static const overlayEscolha = 'escolha';
   static const overlayHud = 'hud';
@@ -44,7 +29,8 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   final Images imagensDosBlocos = Images(prefix: 'assets/tiles/');
 
   final ValueNotifier<int> moedas = ValueNotifier(0);
-  final ValueNotifier<int> coracoes = ValueNotifier(coracoesIniciais);
+  final ValueNotifier<int> coracoes = ValueNotifier(3);
+  int coracoesMaximos = 3;
   final ValueNotifier<bool> mostrarControlesDeToque = ValueNotifier(true);
   int totalDeMoedas = 0;
   int heroiEscolhido = 0;
@@ -56,7 +42,17 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
 
   @override
   Future<void> onLoad() async {
-    await images.loadAll(['personagens.png', 'blocos.png', 'fundo.png']);
+    await images.loadAll([
+      'blocos.png',
+      'fundo.png',
+      for (final classe in classes) classe.imagem,
+      'inimigos/slime.png',
+      'inimigos/slime_fogo.png',
+      'inimigos/morcego.png',
+      'inimigos/golem.png',
+      'poderes/espada.png',
+      'poderes/pedra.png',
+    ]);
     await Sons.carregar();
     camera.backdrop.add(Fundo());
     camera.viewfinder.anchor = Anchor.center;
@@ -82,13 +78,11 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       ..remove(overlayVitoria)
       ..remove(overlayDerrota);
     moedas.value = 0;
-    coracoes.value = coracoesIniciais;
+    coracoesMaximos = classes[indiceHeroi].coracoes;
+    coracoes.value = coracoesMaximos;
     controle.soltarTudo();
 
-    final nova = Fase(
-      arquivo: 'fase1.tmx',
-      indiceHeroi: herois[indiceHeroi].indiceSprite,
-    );
+    final nova = Fase(arquivo: 'fase1.tmx', classe: classes[indiceHeroi]);
     fase = nova;
     world = nova;
     camera.world = nova;
@@ -134,7 +128,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     overlays
       ..remove(overlayDerrota)
       ..add(overlayControles);
-    coracoes.value = coracoesIniciais;
+    coracoes.value = coracoesMaximos;
     controle.soltarTudo();
     fase?.voltarAoPontoDeRetorno();
     Sons.retomarMusica();

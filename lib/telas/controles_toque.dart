@@ -39,6 +39,14 @@ class ControlesToque extends StatelessWidget {
                           ),
                           const Spacer(),
                           _Botao(
+                            icone:
+                                jogo.fase?.classe.icone ?? Icons.star_rounded,
+                            cor: (jogo.fase?.classe.cor ?? Colors.white)
+                                .withValues(alpha: 0.6),
+                            aoMudar: controle.toqueAtaque,
+                          ),
+                          const SizedBox(width: 18),
+                          _Botao(
                             icone: Icons.arrow_upward_rounded,
                             tamanho: 104,
                             cor: const Color(0x99FFC93C),

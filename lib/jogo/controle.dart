@@ -4,12 +4,14 @@ class Controle {
   bool _teclaEsquerda = false;
   bool _teclaDireita = false;
   bool _teclaPulo = false;
+  bool _teclaAtaque = false;
 
   bool toqueEsquerda = false;
   bool toqueDireita = false;
   bool _toquePulo = false;
 
   bool _pediuPulo = false;
+  bool _pediuAtaque = false;
 
   static final _esquerda = {
     LogicalKeyboardKey.arrowLeft,
@@ -27,7 +29,15 @@ class Controle {
     LogicalKeyboardKey.enter,
     LogicalKeyboardKey.numpadEnter,
     LogicalKeyboardKey.gameButtonA,
+  };
+  static final _ataque = {
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.keyS,
+    LogicalKeyboardKey.keyX,
+    LogicalKeyboardKey.keyJ,
     LogicalKeyboardKey.gameButtonB,
+    LogicalKeyboardKey.gameButtonX,
+    LogicalKeyboardKey.gameButtonY,
   };
 
   bool get esquerda => _teclaEsquerda || toqueEsquerda;
@@ -40,10 +50,17 @@ class Controle {
     return pediu;
   }
 
+  bool consumirPedidoDeAtaque() {
+    final pediu = _pediuAtaque;
+    _pediuAtaque = false;
+    return pediu;
+  }
+
   bool ehTeclaDoJogo(LogicalKeyboardKey tecla) =>
       _esquerda.contains(tecla) ||
       _direita.contains(tecla) ||
-      _pulo.contains(tecla);
+      _pulo.contains(tecla) ||
+      _ataque.contains(tecla);
 
   void atualizarTeclado(KeyEvent evento, Set<LogicalKeyboardKey> apertadas) {
     _teclaEsquerda = apertadas.any(_esquerda.contains);
@@ -55,6 +72,13 @@ class Controle {
         !puloAntes) {
       _pediuPulo = true;
     }
+    final ataqueAntes = _teclaAtaque;
+    _teclaAtaque = apertadas.any(_ataque.contains);
+    if (evento is KeyDownEvent &&
+        _ataque.contains(evento.logicalKey) &&
+        !ataqueAntes) {
+      _pediuAtaque = true;
+    }
   }
 
   void toquePulo(bool apertado) {
@@ -64,7 +88,15 @@ class Controle {
     _toquePulo = apertado;
   }
 
+  void toqueAtaque(bool apertado) {
+    if (apertado) {
+      _pediuAtaque = true;
+    }
+  }
+
   void soltarTudo() {
+    _teclaAtaque = false;
+    _pediuAtaque = false;
     _teclaEsquerda = false;
     _teclaDireita = false;
     _teclaPulo = false;
