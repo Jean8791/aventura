@@ -31,7 +31,7 @@ class EscolhaHeroi extends StatelessWidget {
                     autofocus: i == jogo.heroiEscolhido,
                     cor: Colors.white,
                     padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-                    aoApertar: () => jogo.comecar(i),
+                    aoApertar: () => jogo.escolherHeroi(i),
                     child: _CartaoDeHeroi(classe: classes[i]),
                   ),
               ],

@@ -73,6 +73,34 @@ class Hud extends StatelessWidget {
                         ),
                       ),
                     ),
+                    ValueListenableBuilder<int>(
+                      valueListenable: jogo.diamantes,
+                      builder: (_, diamantes, _) => jogo.totalDeDiamantes == 0
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.only(left: 16),
+                              child: Row(
+                                children: [
+                                  Image.asset(
+                                    'assets/images/diamante.png',
+                                    width: 28,
+                                    height: 28,
+                                    fit: BoxFit.contain,
+                                    filterQuality: FilterQuality.none,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$diamantes',
+                                    style: const TextStyle(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                    ),
                   ],
                 ),
               ),

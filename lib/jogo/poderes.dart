@@ -73,6 +73,7 @@ class Espadada extends Poder {
 
   final Heroi heroi;
   double _tempo = 0;
+  bool _golpeouBlocos = false;
   static const _duracao = 0.18;
   late final SpriteComponent _espada;
 
@@ -101,6 +102,10 @@ class Espadada extends Poder {
     final progresso = (_tempo / _duracao).clamp(0.0, 1.0);
     _espada.angle = heroi.direcao * (-1.1 + progresso * 2.4);
     acertarInimigos(toRect(), Golpe.espada);
+    if (!_golpeouBlocos && progresso > 0.3) {
+      _golpeouBlocos = true;
+      fase.golpearArea(toRect(), Golpe.espada);
+    }
     if (_tempo >= _duracao) {
       removeFromParent();
     }
@@ -131,7 +136,8 @@ class Raio extends Poder {
     _percorrido += passo;
     acertarInimigos(toRect(), Golpe.raio);
     final ponta = position.x + direcao * size.x / 2;
-    if (_percorrido > _alcance || bateuEmBloco(ponta, position.y)) {
+    if (_percorrido > _alcance ||
+        fase.golpearPonto(ponta, position.y, Golpe.raio)) {
       soltarFaiscas(Vector2(ponta, position.y), const Color(0xFFFFE066));
       removeFromParent();
     }
@@ -181,7 +187,7 @@ class BolaDeFogo extends Poder {
     _vida -= dt;
     _velocidade.y += 700 * dt;
     position.x += _velocidade.x * dt;
-    if (bateuEmBloco(position.x + direcao * 4, position.y)) {
+    if (fase.golpearPonto(position.x + direcao * 4, position.y, Golpe.fogo)) {
       _explodir();
       return;
     }
@@ -255,7 +261,15 @@ class Bolha extends Poder {
     _tempo += dt;
     position.x += direcao * 150 * dt;
     position.y = _baseY - _tempo * 10 + sin(_tempo * 12) * 2;
-    if (acertarInimigos(toRect(), Golpe.agua, atravessa: false) > 0 ||
+    final area = toRect();
+    for (final fogueira in fase.fogueiras) {
+      if (fogueira.acesa && fogueira.toRect().overlaps(area)) {
+        fogueira.apagar();
+        removeFromParent();
+        return;
+      }
+    }
+    if (acertarInimigos(area, Golpe.agua, atravessa: false) > 0 ||
         _tempo > 1.4 ||
         bateuEmBloco(position.x + direcao * 6, position.y)) {
       soltarFaiscas(position, const Color(0xFFB8E4FF), quantidade: 6);

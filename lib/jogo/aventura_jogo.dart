@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'classes.dart';
 import 'controle.dart';
 import 'fase.dart';
+import 'fases.dart';
 import 'fundo.dart';
 import 'sons.dart';
 
@@ -19,6 +20,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   static const double alturaVisivel = 15 * tamanhoBloco;
 
   static const overlayEscolha = 'escolha';
+  static const overlayFases = 'fases';
   static const overlayHud = 'hud';
   static const overlayControles = 'controles';
   static const overlayVitoria = 'vitoria';
@@ -33,18 +35,28 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   int coracoesMaximos = 3;
   final ValueNotifier<bool> mostrarControlesDeToque = ValueNotifier(true);
   int totalDeMoedas = 0;
+  final ValueNotifier<int> diamantes = ValueNotifier(0);
+  int totalDeDiamantes = 0;
   int heroiEscolhido = 0;
+  int faseAtual = 0;
+  final Map<int, int> melhoresDiamantes = {};
+
+  bool get temProximaFase => faseAtual + 1 < fases.length;
 
   Fase? fase;
 
   @override
-  Color backgroundColor() => const Color(0xFFDFF6F5);
+  Color backgroundColor() => fase?.dados.ceu ?? const Color(0xFFDFF6F5);
 
   @override
   Future<void> onLoad() async {
     await images.loadAll([
       'blocos.png',
       'fundo.png',
+      'fundo_deserto.png',
+      'diamante.png',
+      'obstaculos_gelo.png',
+      'obstaculos_rachada.png',
       for (final classe in classes) classe.imagem,
       'inimigos/slime.png',
       'inimigos/slime_fogo.png',
@@ -62,6 +74,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   bool get _jogando =>
       fase != null &&
       !overlays.isActive(overlayEscolha) &&
+      !overlays.isActive(overlayFases) &&
       !overlays.isActive(overlayVitoria) &&
       !overlays.isActive(overlayDerrota);
 
@@ -71,18 +84,39 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     overlays.add(overlay);
   }
 
-  Future<void> comecar(int indiceHeroi) async {
+  void escolherHeroi(int indiceHeroi) {
     heroiEscolhido = indiceHeroi;
+    overlays.remove(overlayEscolha);
+    _abrirMenu(overlayFases);
+  }
+
+  void abrirEscolhaDeFase() {
+    Sons.pararMusica();
+    overlays
+      ..remove(overlayVitoria)
+      ..remove(overlayDerrota)
+      ..remove(overlayHud)
+      ..remove(overlayControles);
+    _abrirMenu(overlayFases);
+  }
+
+  Future<void> proximaFase() => comecar(temProximaFase ? faseAtual + 1 : 0);
+
+  Future<void> comecar(int indiceFase) async {
+    faseAtual = indiceFase;
+    final indiceHeroi = heroiEscolhido;
     overlays
       ..remove(overlayEscolha)
+      ..remove(overlayFases)
       ..remove(overlayVitoria)
       ..remove(overlayDerrota);
     moedas.value = 0;
+    diamantes.value = 0;
     coracoesMaximos = classes[indiceHeroi].coracoes;
     coracoes.value = coracoesMaximos;
     controle.soltarTudo();
 
-    final nova = Fase(arquivo: 'fase1.tmx', classe: classes[indiceHeroi]);
+    final nova = Fase(dados: fases[indiceFase], classe: classes[indiceHeroi]);
     fase = nova;
     world = nova;
     camera.world = nova;
@@ -104,6 +138,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     overlays
       ..remove(overlayVitoria)
       ..remove(overlayDerrota)
+      ..remove(overlayFases)
       ..remove(overlayHud)
       ..remove(overlayControles);
     _abrirMenu(overlayEscolha);
@@ -136,6 +171,10 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void venceu() {
+    melhoresDiamantes[faseAtual] = max(
+      melhoresDiamantes[faseAtual] ?? 0,
+      diamantes.value,
+    );
     fase?.heroi.congelar();
     Sons.pararMusica();
     Sons.tocar('vitoria');

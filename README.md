@@ -37,6 +37,23 @@ Inimigos e fraquezas:
 | Morcego | 1 | voa; o raio causa dano dobrado |
 | Golem de pedra | 4 | o raio causa dano dobrado; o fogo faz pouco efeito |
 
+## Fases
+
+| Fase | Tema | Obstáculos |
+|---|---|---|
+| 1. Floresta | grama | buracos, mola, escadinhas |
+| 2. Montanha Gelada | neve | gelo, parede rachada |
+| 3. Deserto de Fogo | areia | fogueiras, túnel em chamas, parede rachada |
+
+O caminho até a bandeira é possível com qualquer herói. Cada fase esconde 3 diamantes, e muitos deles ficam atrás de obstáculos de elemento, então cada herói alcança uma parte:
+
+| Obstáculo | Quem resolve |
+|---|---|
+| Gelo | Mago do Fogo derrete |
+| Parede rachada | Guerreiro e Mago do Raio quebram |
+| Fogueira | Maga da Água apaga; o Mago do Fogo passa sem se queimar |
+| Diamante no alto | Maga da Terra sobe com degraus de pedra; a Maga da Água sobe num morcego preso na bolha |
+
 ## Rodando
 
 ```bash
@@ -54,17 +71,17 @@ adb install -r build/app/outputs/flutter-apk/app-release.apk
 
 Sem `adb`, dá para copiar o `app-release.apk` para um pendrive e instalar pelo gerenciador de arquivos da TV box (é preciso permitir apps de fontes desconhecidas). O jogo aparece no menu da TV como **Aventura**.
 
-## Editando a fase
+## Editando as fases
 
-A fase fica em `assets/tiles/fase1.tmx`, no formato do [Tiled](https://www.mapeditor.org/) (gratuito):
+As fases ficam em `assets/tiles/fase1.tmx`, `fase2.tmx` e `fase3.tmx`, no formato do [Tiled](https://www.mapeditor.org/) (gratuito):
 
 - camada **terreno**: blocos em que o herói pisa e bate;
 - camada **decoracao**: plantas, placas e árvores, sem colisão;
-- camada **objetos**: retângulos com nome `inicio`, `moeda`, `mola`, `checkpoint`, `chegada` ou um inimigo: `slime`, `slime_fogo`, `morcego` ou `golem`.
+- camada **objetos**: retângulos com nome `inicio`, `moeda`, `diamante`, `mola`, `checkpoint`, `chegada`, um inimigo (`slime`, `slime_fogo`, `morcego`, `golem`) ou um obstáculo (`gelo`, `rachada`, `fogueira`).
 
 Abra o arquivo no Tiled, desenhe com os blocos de `blocos.png`, salve e rode o jogo de novo.
 
-A versão inicial da fase foi gerada por `ferramentas/gerar_fase1.py`. Rodar o script de novo **sobrescreve** as edições feitas no Tiled.
+As fases foram geradas por `ferramentas/gerar_fases.py`. Rodar o script de novo **sobrescreve** as edições feitas no Tiled. Para criar uma fase nova, acrescente uma função no script e uma entrada em `lib/jogo/fases.dart`.
 
 ## Música
 
@@ -86,6 +103,8 @@ lib/
     heroi.dart         física do herói (aceleração, pulo variável, coyote time) e uso do poder
     poderes.dart       espadada, raio, bola de fogo, bolha e pedra mágica
     inimigo.dart       slime, slime de fogo, morcego e golem, com vida e fraquezas
+    obstaculos.dart    gelo, parede rachada, fogueira e diamante
+    fases.dart         lista das fases (mapa, fundo e cor do céu)
     itens.dart         moeda, mola e bandeira
     controle.dart      toque, teclado, controle remoto e gamepad
   telas/               escolha do herói, placar, botões de toque, vitória e derrota

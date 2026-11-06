@@ -5,21 +5,18 @@ import 'package:flame/components.dart';
 import 'aventura_jogo.dart';
 
 class Fundo extends Component with HasGameReference<AventuraJogo> {
-  late final Image _imagem;
   final Paint _pintura = Paint()..filterQuality = FilterQuality.none;
-  final Paint _ceu = Paint()..color = const Color(0xFFDFF6F5);
-
-  @override
-  Future<void> onLoad() async {
-    _imagem = game.images.fromCache('fundo.png');
-  }
+  final Paint _ceu = Paint();
 
   @override
   void render(Canvas canvas) {
+    final dados = game.fase?.dados;
+    final imagem = game.images.fromCache(dados?.fundo ?? 'fundo.png');
+    _ceu.color = dados?.ceu ?? const Color(0xFFDFF6F5);
     final tela = game.size;
     canvas.drawRect(Rect.fromLTWH(0, 0, tela.x, tela.y), _ceu);
-    final escala = tela.y / _imagem.height;
-    final larguraDaFaixa = _imagem.width * escala;
+    final escala = tela.y / imagem.height;
+    final larguraDaFaixa = imagem.width * escala;
     final deslocamento =
         -(game.camera.viewfinder.position.x *
             game.camera.viewfinder.zoom *
@@ -28,8 +25,8 @@ class Fundo extends Component with HasGameReference<AventuraJogo> {
     final origem = Rect.fromLTWH(
       0,
       0,
-      _imagem.width.toDouble(),
-      _imagem.height.toDouble(),
+      imagem.width.toDouble(),
+      imagem.height.toDouble(),
     );
     for (
       var x = deslocamento - larguraDaFaixa;
@@ -37,7 +34,7 @@ class Fundo extends Component with HasGameReference<AventuraJogo> {
       x += larguraDaFaixa
     ) {
       canvas.drawImageRect(
-        _imagem,
+        imagem,
         origem,
         Rect.fromLTWH(
           x.floorToDouble(),

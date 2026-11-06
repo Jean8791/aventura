@@ -8,7 +8,9 @@ import 'aventura_jogo.dart';
 import 'classes.dart';
 import 'heroi.dart';
 import 'inimigo.dart';
+import 'fases.dart';
 import 'itens.dart';
+import 'obstaculos.dart';
 import 'poderes.dart';
 import 'sons.dart';
 
@@ -21,9 +23,12 @@ class ResultadoMovimento {
 }
 
 class Fase extends World with HasGameReference<AventuraJogo> {
-  Fase({required this.arquivo, required this.classe});
+  Fase({required this.dados, required this.classe});
 
-  final String arquivo;
+  final DadosDaFase dados;
+  final Map<(int, int), BlocoDeElemento> _blocosDeElemento = {};
+  final List<Fogueira> fogueiras = [];
+  final List<Diamante> diamantes = [];
   final ClasseDeHeroi classe;
   final Set<(int, int)> _pedras = {};
   final List<PedraMagica> _pedrasAtivas = [];
@@ -50,7 +55,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
   @override
   Future<void> onLoad() async {
     mapa = await TiledComponent.load(
-      arquivo,
+      dados.arquivo,
       Vector2.all(tamanhoBloco),
       images: game.imagensDosBlocos,
     );
@@ -59,10 +64,10 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     final terreno = mapa.tileMap.getLayer<TileLayer>('terreno')!;
     colunas = terreno.width;
     linhas = terreno.height;
-    final dados = terreno.tileData!;
+    final celulas = terreno.tileData!;
     _solidos = [
       for (var r = 0; r < linhas; r++)
-        [for (var c = 0; c < colunas; c++) dados[r][c].tile != 0],
+        [for (var c = 0; c < colunas; c++) celulas[r][c].tile != 0],
     ];
 
     Vector2? inicio;
@@ -89,6 +94,19 @@ class Fase extends World with HasGameReference<AventuraJogo> {
             alturaEmBlocos: (o.height / tamanhoBloco).round(),
             chegada: true,
           );
+        case 'gelo' || 'rachada':
+          final bloco = BlocoDeElemento(
+            tipo: o.name == 'gelo'
+                ? TipoDeObstaculo.gelo
+                : TipoDeObstaculo.rachada,
+            coluna: (o.x / tamanhoBloco).round(),
+            linha: (o.y / tamanhoBloco).round(),
+          );
+          _blocosDeElemento[(bloco.coluna, bloco.linha)] = bloco;
+        case 'fogueira':
+          fogueiras.add(Fogueira(posicao: pos));
+        case 'diamante':
+          diamantes.add(Diamante(posicao: pos));
         default:
           final tipo = TipoDeInimigo.peloNome(o.name);
           if (tipo != null) {
@@ -96,12 +114,22 @@ class Fase extends World with HasGameReference<AventuraJogo> {
           }
       }
     }
-    addAll([...moedas, ...inimigos, ...molas, ...checkpoints, chegada]);
+    addAll([
+      ..._blocosDeElemento.values,
+      ...fogueiras,
+      ...moedas,
+      ...diamantes,
+      ...inimigos,
+      ...molas,
+      ...checkpoints,
+      chegada,
+    ]);
 
     pontoDeRetorno = inicio ?? Vector2(tamanhoBloco * 2, tamanhoBloco * 8);
     heroi = Heroi(classe: classe, posicao: _posicaoDoHeroi(pontoDeRetorno));
     add(heroi);
     game.totalDeMoedas = moedas.length;
+    game.totalDeDiamantes = diamantes.length;
   }
 
   Vector2 _posicaoDoHeroi(Vector2 ponto) => Vector2(
@@ -116,7 +144,9 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     if (linha < 0 || linha >= linhas) {
       return false;
     }
-    return _solidos[linha][coluna] || _pedras.contains((coluna, linha));
+    return _solidos[linha][coluna] ||
+        _pedras.contains((coluna, linha)) ||
+        _blocosDeElemento.containsKey((coluna, linha));
   }
 
   ResultadoMovimento mover(
@@ -233,6 +263,21 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       }
     }
 
+    for (final diamante in diamantes) {
+      if (!diamante.coletado && diamante.toRect().deflate(3).overlaps(corpo)) {
+        diamante.coletar();
+        game.diamantes.value++;
+      }
+    }
+
+    if (classe.poder != Golpe.fogo) {
+      for (final fogueira in fogueiras) {
+        if (fogueira.acesa && fogueira.areaQueQueima.overlaps(corpo)) {
+          heroi.levarDano(origemX: fogueira.center.x);
+        }
+      }
+    }
+
     for (final bandeira in checkpoints) {
       if (!bandeira.ativa && bandeira.toRect().overlaps(corpo)) {
         bandeira.ativar();
@@ -290,6 +335,59 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       _pedrasAtivas.add(pedra);
       add(pedra);
       return;
+    }
+  }
+
+  bool golpearCelula(int coluna, int linha, Golpe golpe) {
+    final bloco = _blocosDeElemento[(coluna, linha)];
+    if (bloco == null) {
+      return solido(coluna, linha);
+    }
+    if (bloco.tipo.quebraCom(golpe)) {
+      _quebrarEmCadeia(coluna, linha);
+    } else {
+      bloco.tremer();
+    }
+    return true;
+  }
+
+  void _quebrarEmCadeia(int coluna, int linha) {
+    final bloco = _blocosDeElemento.remove((coluna, linha));
+    if (bloco == null) {
+      return;
+    }
+    bloco.quebrar();
+    for (final (dc, dl) in const [(0, -1), (0, 1), (-1, 0), (1, 0)]) {
+      final vizinho = _blocosDeElemento[(coluna + dc, linha + dl)];
+      if (vizinho != null && vizinho.tipo == bloco.tipo) {
+        add(
+          TimerComponent(
+            period: 0.09,
+            removeOnFinish: true,
+            onTick: () => _quebrarEmCadeia(coluna + dc, linha + dl),
+          ),
+        );
+      }
+    }
+  }
+
+  bool golpearPonto(double x, double y, Golpe golpe) => golpearCelula(
+    (x / tamanhoBloco).floor(),
+    (y / tamanhoBloco).floor(),
+    golpe,
+  );
+
+  void golpearArea(Rect area, Golpe golpe) {
+    final c0 = (area.left / tamanhoBloco).floor();
+    final c1 = ((area.right - 0.01) / tamanhoBloco).floor();
+    final l0 = (area.top / tamanhoBloco).floor();
+    final l1 = ((area.bottom - 0.01) / tamanhoBloco).floor();
+    for (var c = c0; c <= c1; c++) {
+      for (var l = l0; l <= l1; l++) {
+        if (_blocosDeElemento.containsKey((c, l))) {
+          golpearCelula(c, l, golpe);
+        }
+      }
     }
   }
 
