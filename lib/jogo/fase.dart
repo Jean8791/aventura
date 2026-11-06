@@ -12,6 +12,7 @@ import 'fases.dart';
 import 'itens.dart';
 import 'obstaculos.dart';
 import 'poderes.dart';
+import 'progresso.dart';
 import 'sons.dart';
 
 const double tamanhoBloco = 18;
@@ -23,9 +24,10 @@ class ResultadoMovimento {
 }
 
 class Fase extends World with HasGameReference<AventuraJogo> {
-  Fase({required this.dados, required this.classe});
+  Fase({required this.dados, required this.classe, required this.numero});
 
   final DadosDaFase dados;
+  final int numero;
   final Map<(int, int), BlocoDeElemento> _blocosDeElemento = {};
   final List<Fogueira> fogueiras = [];
   final List<Diamante> diamantes = [];
@@ -106,7 +108,14 @@ class Fase extends World with HasGameReference<AventuraJogo> {
         case 'fogueira':
           fogueiras.add(Fogueira(posicao: pos));
         case 'diamante':
-          diamantes.add(Diamante(posicao: pos));
+          final indice = diamantes.length;
+          diamantes.add(
+            Diamante(
+              posicao: pos,
+              indice: indice,
+              jaEncontrado: Progresso.diamantes(numero).contains(indice),
+            ),
+          );
         default:
           final tipo = TipoDeInimigo.peloNome(o.name);
           if (tipo != null) {
@@ -267,6 +276,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       if (!diamante.coletado && diamante.toRect().deflate(3).overlaps(corpo)) {
         diamante.coletar();
         game.diamantes.value++;
+        Progresso.salvarDiamante(numero, diamante.indice);
       }
     }
 

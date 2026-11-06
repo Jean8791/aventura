@@ -54,6 +54,10 @@ O caminho até a bandeira é possível com qualquer herói. Cada fase esconde 3 
 | Fogueira | Maga da Água apaga; o Mago do Fogo passa sem se queimar |
 | Diamante no alto | Maga da Terra sobe com degraus de pedra; a Maga da Água sobe num morcego preso na bolha |
 
+## Progresso salvo
+
+O jogo guarda no aparelho os diamantes encontrados em cada fase (somando todos os heróis), as fases concluídas (troféu no cartão), o último herói e a última fase escolhidos e se a música está ligada. Diamantes já encontrados aparecem transparentes na fase. Desinstalar o app apaga o progresso.
+
 ## Rodando
 
 ```bash

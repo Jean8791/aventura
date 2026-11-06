@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../jogo/aventura_jogo.dart';
 import '../jogo/classes.dart';
 import '../jogo/fases.dart';
+import '../jogo/progresso.dart';
 import 'botao_grande.dart';
 
 class EscolhaFase extends StatelessWidget {
@@ -50,7 +51,8 @@ class EscolhaFase extends StatelessWidget {
                     child: _CartaoDeFase(
                       numero: i + 1,
                       dados: fases[i],
-                      diamantes: jogo.melhoresDiamantes[i] ?? 0,
+                      diamantes: Progresso.diamantes(i).length,
+                      concluida: Progresso.concluida(i),
                     ),
                   ),
               ],
@@ -88,11 +90,13 @@ class _CartaoDeFase extends StatelessWidget {
     required this.numero,
     required this.dados,
     required this.diamantes,
+    required this.concluida,
   });
 
   final int numero;
   final DadosDaFase dados;
   final int diamantes;
+  final bool concluida;
 
   @override
   Widget build(BuildContext context) {
@@ -100,15 +104,37 @@ class _CartaoDeFase extends StatelessWidget {
       width: 150,
       child: Column(
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: dados.cor,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFF3B2B4F), width: 3),
-            ),
-            child: Icon(dados.icone, size: 42, color: const Color(0xFF3B2B4F)),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: dados.cor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFF3B2B4F), width: 3),
+                ),
+                child: Icon(
+                  dados.icone,
+                  size: 42,
+                  color: const Color(0xFF3B2B4F),
+                ),
+              ),
+              if (concluida)
+                const Positioned(
+                  right: -14,
+                  top: -8,
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 34,
+                    color: Color(0xFFFFC93C),
+                    shadows: [
+                      Shadow(offset: Offset(2, 2), color: Color(0xFF3B2B4F)),
+                    ],
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 6),
           Text(

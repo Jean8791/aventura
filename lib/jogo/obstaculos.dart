@@ -146,9 +146,14 @@ class Fogueira extends PositionComponent with HasGameReference<AventuraJogo> {
 }
 
 class Diamante extends SpriteComponent with HasGameReference<AventuraJogo> {
-  Diamante({required Vector2 posicao})
-    : super(position: posicao, size: Vector2.all(tamanhoBloco));
+  Diamante({
+    required Vector2 posicao,
+    required this.indice,
+    this.jaEncontrado = false,
+  }) : super(position: posicao, size: Vector2.all(tamanhoBloco));
 
+  final int indice;
+  final bool jaEncontrado;
   bool coletado = false;
   double _tempo = 0;
   late final double _yBase;
@@ -157,6 +162,9 @@ class Diamante extends SpriteComponent with HasGameReference<AventuraJogo> {
   Future<void> onLoad() async {
     sprite = Sprite(game.images.fromCache('diamante.png'));
     _yBase = position.y;
+    if (jaEncontrado) {
+      opacity = 0.4;
+    }
   }
 
   @override

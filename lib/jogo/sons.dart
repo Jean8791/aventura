@@ -1,6 +1,8 @@
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
 
+import 'progresso.dart';
+
 class Sons {
   static const _efeitos = [
     'pulo.ogg',
@@ -15,7 +17,9 @@ class Sons {
   static const _musica = 'musica_fase1.wav';
   static const _volumeDaMusica = 0.35;
 
-  static final ValueNotifier<bool> musicaLigada = ValueNotifier(true);
+  static final ValueNotifier<bool> musicaLigada = ValueNotifier(
+    Progresso.musicaLigada,
+  );
   static bool _musicaTocando = false;
 
   static Future<void> carregar() async {
@@ -55,6 +59,7 @@ class Sons {
 
   static void alternarMusica() {
     musicaLigada.value = !musicaLigada.value;
+    Progresso.musicaLigada = musicaLigada.value;
     if (!_musicaTocando) {
       return;
     }

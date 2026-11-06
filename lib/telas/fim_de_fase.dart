@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../jogo/aventura_jogo.dart';
 import 'botao_grande.dart';
+import '../jogo/progresso.dart';
 import 'escolha_fase.dart';
 
 class TelaVitoria extends StatelessWidget {
@@ -12,7 +13,8 @@ class TelaVitoria extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ultima = !jogo.temProximaFase;
-    final faltam = jogo.totalDeDiamantes - jogo.diamantes.value;
+    final encontrados = Progresso.diamantes(jogo.faseAtual).length;
+    final faltam = jogo.totalDeDiamantes - encontrados;
     return _Painel(
       titulo: ultima ? 'Você terminou a aventura!' : 'Você conseguiu!',
       icone: Icons.emoji_events_rounded,
@@ -22,7 +24,7 @@ class TelaVitoria extends StatelessWidget {
         children: [
           const SizedBox(height: 6),
           LinhaDeDiamantes(
-            quantidade: jogo.diamantes.value,
+            quantidade: encontrados,
             total: jogo.totalDeDiamantes,
             tamanho: 34,
           ),

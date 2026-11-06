@@ -12,6 +12,7 @@ import 'controle.dart';
 import 'fase.dart';
 import 'fases.dart';
 import 'fundo.dart';
+import 'progresso.dart';
 import 'sons.dart';
 
 class AventuraJogo extends FlameGame with KeyboardEvents {
@@ -37,9 +38,8 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   int totalDeMoedas = 0;
   final ValueNotifier<int> diamantes = ValueNotifier(0);
   int totalDeDiamantes = 0;
-  int heroiEscolhido = 0;
-  int faseAtual = 0;
-  final Map<int, int> melhoresDiamantes = {};
+  int heroiEscolhido = Progresso.ultimoHeroi.clamp(0, classes.length - 1);
+  int faseAtual = Progresso.ultimaFase.clamp(0, fases.length - 1);
 
   bool get temProximaFase => faseAtual + 1 < fases.length;
 
@@ -86,6 +86,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
 
   void escolherHeroi(int indiceHeroi) {
     heroiEscolhido = indiceHeroi;
+    Progresso.ultimoHeroi = indiceHeroi;
     overlays.remove(overlayEscolha);
     _abrirMenu(overlayFases);
   }
@@ -104,6 +105,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
 
   Future<void> comecar(int indiceFase) async {
     faseAtual = indiceFase;
+    Progresso.ultimaFase = indiceFase;
     final indiceHeroi = heroiEscolhido;
     overlays
       ..remove(overlayEscolha)
@@ -116,7 +118,11 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     coracoes.value = coracoesMaximos;
     controle.soltarTudo();
 
-    final nova = Fase(dados: fases[indiceFase], classe: classes[indiceHeroi]);
+    final nova = Fase(
+      dados: fases[indiceFase],
+      classe: classes[indiceHeroi],
+      numero: indiceFase,
+    );
     fase = nova;
     world = nova;
     camera.world = nova;
@@ -171,10 +177,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void venceu() {
-    melhoresDiamantes[faseAtual] = max(
-      melhoresDiamantes[faseAtual] ?? 0,
-      diamantes.value,
-    );
+    Progresso.marcarConcluida(faseAtual);
     fase?.heroi.congelar();
     Sons.pararMusica();
     Sons.tocar('vitoria');
