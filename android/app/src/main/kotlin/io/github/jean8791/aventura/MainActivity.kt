@@ -3,6 +3,7 @@ package io.github.jean8791.aventura
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.View
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
@@ -25,7 +26,26 @@ class MainActivity : FlutterActivity() {
             })
     }
 
+    override fun onWindowFocusChanged(temFoco: Boolean) {
+        super.onWindowFocusChanged(temFoco)
+        if (temFoco) {
+            focarNoJogo()
+        }
+    }
+
+    private fun focarNoJogo() {
+        val tela = findViewById<View>(FLUTTER_VIEW_ID) ?: return
+        if (!tela.hasFocus()) {
+            tela.isFocusable = true
+            tela.isFocusableInTouchMode = true
+            tela.requestFocus()
+        }
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.keyCode in teclasQueFicamNoJogo) {
+            focarNoJogo()
+        }
         val sink = eventos
         if (sink != null && event.repeatCount == 0 &&
             (event.action == KeyEvent.ACTION_DOWN || event.action == KeyEvent.ACTION_UP)
@@ -39,8 +59,24 @@ class MainActivity : FlutterActivity() {
                 )
             )
         }
-        return super.dispatchKeyEvent(event)
+        val tratado = super.dispatchKeyEvent(event)
+        return tratado || event.keyCode in teclasQueFicamNoJogo
     }
+
+    private val teclasQueFicamNoJogo = setOf(
+        KeyEvent.KEYCODE_DPAD_UP,
+        KeyEvent.KEYCODE_DPAD_DOWN,
+        KeyEvent.KEYCODE_DPAD_LEFT,
+        KeyEvent.KEYCODE_DPAD_RIGHT,
+        KeyEvent.KEYCODE_DPAD_CENTER,
+        KeyEvent.KEYCODE_DPAD_UP_LEFT,
+        KeyEvent.KEYCODE_DPAD_UP_RIGHT,
+        KeyEvent.KEYCODE_DPAD_DOWN_LEFT,
+        KeyEvent.KEYCODE_DPAD_DOWN_RIGHT,
+        KeyEvent.KEYCODE_ENTER,
+        KeyEvent.KEYCODE_NUMPAD_ENTER,
+        KeyEvent.KEYCODE_TAB,
+    )
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
         val sink = eventos

@@ -18,7 +18,7 @@ class EntrarJogadores extends StatelessWidget {
       child: ValueListenableBuilder<List<String?>>(
         valueListenable: jogo.origensDosJogadores,
         builder: (_, origens, _) => SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -32,7 +32,7 @@ class EntrarJogadores extends StatelessWidget {
                   color: Colors.white,
                 ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 24,
                 runSpacing: 16,
@@ -42,7 +42,7 @@ class EntrarJogadores extends StatelessWidget {
                     _cartao(j, origens[j] != null, origens.indexOf(null) == j),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: 10),
               BotaoGrande(
                 cor: const Color(0xFFE8F4FF),
                 padding: const EdgeInsets.symmetric(
@@ -80,8 +80,8 @@ class EntrarJogadores extends StatelessWidget {
   Widget _cartao(int jogador, bool pronto, bool vez) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: 230,
-      padding: const EdgeInsets.all(16),
+      width: 210,
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -93,12 +93,12 @@ class EntrarJogadores extends StatelessWidget {
       child: Column(
         children: [
           CircleAvatar(
-            radius: 30,
+            radius: 22,
             backgroundColor: _cores[jogador],
             child: Text(
               '${jogador + 1}',
               style: const TextStyle(
-                fontSize: 32,
+                fontSize: 24,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
               ),
@@ -109,7 +109,7 @@ class EntrarJogadores extends StatelessWidget {
           const SizedBox(height: 6),
           Icon(
             pronto ? Icons.check_circle_rounded : Icons.sports_esports_rounded,
-            size: 48,
+            size: 34,
             color: pronto ? const Color(0xFF3CB371) : const Color(0xFF6B5B7F),
           ),
           const SizedBox(height: 4),

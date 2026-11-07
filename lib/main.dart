@@ -34,6 +34,51 @@ class AventuraApp extends StatefulWidget {
 class _AventuraAppState extends State<AventuraApp> {
   final AventuraJogo _jogo = AventuraJogo();
 
+  static final _teclasDeNavegacao = {
+    LogicalKeyboardKey.arrowUp,
+    LogicalKeyboardKey.arrowDown,
+    LogicalKeyboardKey.arrowLeft,
+    LogicalKeyboardKey.arrowRight,
+    LogicalKeyboardKey.select,
+    LogicalKeyboardKey.enter,
+    LogicalKeyboardKey.gameButtonA,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_recuperarFoco);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_recuperarFoco);
+    super.dispose();
+  }
+
+  bool _recuperarFoco(KeyEvent evento) {
+    if (evento is! KeyDownEvent ||
+        !_jogo.menuAberto ||
+        !_teclasDeNavegacao.contains(evento.logicalKey)) {
+      return false;
+    }
+    final ehSeta = {
+      LogicalKeyboardKey.arrowUp,
+      LogicalKeyboardKey.arrowDown,
+      LogicalKeyboardKey.arrowLeft,
+      LogicalKeyboardKey.arrowRight,
+    }.contains(evento.logicalKey);
+    if (!ehSeta && _jogo.overlays.isActive(AventuraJogo.overlayEntrar)) {
+      return false;
+    }
+    final focado = FocusManager.instance.primaryFocus;
+    if (focado != null && focado is! FocusScopeNode && focado != _jogo.foco) {
+      return false;
+    }
+    FocusManager.instance.rootScope.nextFocus();
+    return true;
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

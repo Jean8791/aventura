@@ -42,7 +42,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     null,
   ]);
 
-  final FocusNode foco = FocusNode(debugLabel: 'jogo');
+  final FocusNode foco = FocusNode(debugLabel: 'jogo', skipTraversal: true);
   final Images imagensDosBlocos = Images(prefix: 'assets/tiles/');
 
   final ValueNotifier<int> moedas = ValueNotifier(0);
@@ -111,6 +111,15 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     _entrada.encerrar();
     super.onRemove();
   }
+
+  bool get menuAberto =>
+      overlays.isActive(overlayModo) ||
+      overlays.isActive(overlayEntrar) ||
+      overlays.isActive(overlayEscolha) ||
+      overlays.isActive(overlayFases) ||
+      overlays.isActive(overlayVitoria) ||
+      overlays.isActive(overlayDerrota) ||
+      overlays.isActive(overlayPausa);
 
   bool get _jogando =>
       fase != null &&
