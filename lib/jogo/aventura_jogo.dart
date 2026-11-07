@@ -137,6 +137,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     }
     foco.unfocus();
     overlays.add(overlay);
+    _entrada.avisarJogandoEmDupla(false);
   }
 
   void _fecharTudo() {
@@ -429,6 +430,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   @override
   void update(double dt) {
     super.update(dt);
+    _entrada.avisarJogandoEmDupla(jogadores == 2 && _jogando);
     final atual = fase;
     if (atual == null || !atual.isLoaded) {
       return;

@@ -1,5 +1,9 @@
 package io.github.jean8791.aventura
 
+import android.content.Context
+import android.hardware.input.InputManager
+import android.os.Handler
+import android.os.Looper
 import android.view.InputDevice
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -7,10 +11,39 @@ import android.view.View
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.EventChannel
+import io.flutter.plugin.common.MethodChannel
 import kotlin.math.abs
+import kotlin.math.max
 
 class MainActivity : FlutterActivity() {
     private var eventos: EventChannel.EventSink? = null
+    private var jogandoEmDupla = false
+    private val origens = HashMap<Int, String>()
+    private val ultimaDirecao = HashMap<Int, Pair<Int, Int>>()
+
+    private val ouvinteDeDispositivos = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(id: Int) = esquecerDispositivos()
+        override fun onInputDeviceRemoved(id: Int) = esquecerDispositivos()
+        override fun onInputDeviceChanged(id: Int) = esquecerDispositivos()
+    }
+
+    private fun esquecerDispositivos() {
+        origens.clear()
+        ultimaDirecao.clear()
+    }
+
+    private fun origemDe(id: Int): String = origens.getOrPut(id) {
+        val dispositivo = InputDevice.getDevice(id)
+        if (dispositivo == null || dispositivo.isVirtual) {
+            "$id"
+        } else {
+            val descritor = dispositivo.descriptor
+            val repetido = InputDevice.getDeviceIds().any {
+                it != id && InputDevice.getDevice(it)?.descriptor == descritor
+            }
+            if (repetido) "$descritor#$id" else descritor
+        }
+    }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -24,6 +57,24 @@ class MainActivity : FlutterActivity() {
                     eventos = null
                 }
             })
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "aventura/estado")
+            .setMethodCallHandler { chamada, resposta ->
+                if (chamada.method == "jogandoEmDupla") {
+                    jogandoEmDupla = chamada.arguments == true
+                    ultimaDirecao.clear()
+                    resposta.success(null)
+                } else {
+                    resposta.notImplemented()
+                }
+            }
+        (getSystemService(Context.INPUT_SERVICE) as InputManager)
+            .registerInputDeviceListener(ouvinteDeDispositivos, Handler(Looper.getMainLooper()))
+    }
+
+    override fun onDestroy() {
+        (getSystemService(Context.INPUT_SERVICE) as InputManager)
+            .unregisterInputDeviceListener(ouvinteDeDispositivos)
+        super.onDestroy()
     }
 
     override fun onWindowFocusChanged(temFoco: Boolean) {
@@ -54,6 +105,7 @@ class MainActivity : FlutterActivity() {
                 mapOf(
                     "tipo" to "tecla",
                     "dispositivo" to event.deviceId,
+                    "origem" to origemDe(event.deviceId),
                     "codigo" to event.keyCode,
                     "apertou" to (event.action == KeyEvent.ACTION_DOWN),
                 )
@@ -79,22 +131,37 @@ class MainActivity : FlutterActivity() {
     )
 
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        val sink = eventos
-        if (sink != null && event.action == MotionEvent.ACTION_MOVE &&
+        val doControle = event.action == MotionEvent.ACTION_MOVE &&
             (event.isFromSource(InputDevice.SOURCE_JOYSTICK) || event.isFromSource(InputDevice.SOURCE_GAMEPAD))
-        ) {
-            val chapeuX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
-            val chapeuY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-            val alavancaX = event.getAxisValue(MotionEvent.AXIS_X)
-            val x = if (abs(chapeuX) > 0.5f) chapeuX else if (abs(alavancaX) > 0.4f) alavancaX else 0f
+        if (!doControle) {
+            return super.dispatchGenericMotionEvent(event)
+        }
+        val chapeuX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+        val chapeuY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+        val alavancaX = event.getAxisValue(MotionEvent.AXIS_X)
+        val zonaMorta = max(0.5f, (event.device?.getMotionRange(MotionEvent.AXIS_X, event.source)?.flat ?: 0f) * 2f)
+        val x = when {
+            abs(chapeuX) > 0.5f -> if (chapeuX > 0) 1 else -1
+            abs(alavancaX) > zonaMorta -> if (alavancaX > 0) 1 else -1
+            else -> 0
+        }
+        val y = if (abs(chapeuY) > 0.5f) (if (chapeuY > 0) 1 else -1) else 0
+        val direcao = Pair(x, y)
+        val sink = eventos
+        if (sink != null && ultimaDirecao[event.deviceId] != direcao) {
+            ultimaDirecao[event.deviceId] = direcao
             sink.success(
                 mapOf(
                     "tipo" to "eixo",
                     "dispositivo" to event.deviceId,
+                    "origem" to origemDe(event.deviceId),
                     "x" to x.toDouble(),
-                    "y" to chapeuY.toDouble(),
+                    "y" to y.toDouble(),
                 )
             )
+        }
+        if (jogandoEmDupla) {
+            return true
         }
         return super.dispatchGenericMotionEvent(event)
     }

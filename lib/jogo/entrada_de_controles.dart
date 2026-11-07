@@ -47,10 +47,22 @@ class EntradaDeControles {
     _ => null,
   };
 
-  static String origemDe(int dispositivo, int codigo) =>
+  static const _estado = MethodChannel('aventura/estado');
+
+  static String origemDe(String dispositivo, int codigo) =>
       _ladoEsquerdoDoTeclado.contains(codigo)
       ? '$dispositivo:wasd'
-      : '$dispositivo';
+      : dispositivo;
+
+  bool? _jogandoEmDupla;
+
+  void avisarJogandoEmDupla(bool emDupla) {
+    if (_jogandoEmDupla == emDupla) {
+      return;
+    }
+    _jogandoEmDupla = emDupla;
+    _estado.invokeMethod<void>('jogandoEmDupla', emDupla).catchError((_) {});
+  }
 
   final _eventos = StreamController<EventoDeControle>.broadcast();
   StreamSubscription<dynamic>? _assinatura;
@@ -68,11 +80,12 @@ class EntradaDeControles {
     if (dados is! Map) {
       return;
     }
-    final dispositivo = dados['dispositivo'] as int? ?? 0;
+    final dispositivo =
+        dados['origem'] as String? ?? '${dados['dispositivo'] as int? ?? 0}';
     if (dados['tipo'] == 'eixo') {
       _eventos.add(
         EventoDeControle.eixo(
-          origem: '$dispositivo',
+          origem: dispositivo,
           x: (dados['x'] as num?)?.toDouble() ?? 0,
           y: (dados['y'] as num?)?.toDouble() ?? 0,
         ),
