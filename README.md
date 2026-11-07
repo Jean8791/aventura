@@ -2,7 +2,9 @@
 
 Jogo de plataforma em Flutter feito para os meus filhos: escolha um herói com um poder (espada, raio, fogo, terra ou água), corra, pule, pegue as moedas, derrote os monstros e chegue até a bandeira.
 
-Roda em celular e tablet Android e também em TV box Android, com controle remoto ou controle de videogame Bluetooth.
+Roda em celular e tablet Android, em TV box Android (com controle remoto ou controle de videogame) e no navegador.
+
+**Jogar no navegador:** https://jean8791.github.io/aventura/ · **Baixar para Android:** [Aventura.apk](https://github.com/Jean8791/aventura/releases/latest/download/Aventura.apk)
 
 ## Como jogar
 
@@ -28,7 +30,9 @@ Na tela inicial, escolha **2 jogadores**. Cada jogador aperta um botão no próp
 - Cada um tem os seus corações. Quem cai num buraco reaparece ao lado do companheiro. Quem perde todos os corações desmaia por 3 segundos e volta ao lado do companheiro com os corações cheios. A fase só recomeça se os dois desmaiarem.
 - Moedas e diamantes são do time.
 
-Para saber de qual controle veio cada botão, o app lê os eventos no Android (`MainActivity.kt`) e os envia ao Flutter pelo canal `aventura/controles` com o número do dispositivo.
+Para saber de qual controle veio cada botão, o app lê os eventos no Android (`MainActivity.kt`) e os envia ao Flutter pelo canal `aventura/controles` com a identificação do dispositivo (o descritor do Android, que não muda quando um controle Bluetooth reconecta). Durante a partida em dupla, o app trata sozinho o direcional e a alavanca de cada controle, para o Android não misturar as setas de um controle com as do outro.
+
+No navegador, o modo de 2 jogadores funciona com o teclado: um jogador nas setas e o outro em W, A, S, D.
 
 ## Heróis
 
@@ -93,6 +97,14 @@ fvm flutter pub get
 fvm flutter run
 ```
 
+### Versão web
+
+```bash
+fvm flutter build web --release --base-href /aventura/
+```
+
+A cada push na `main`, o GitHub Actions (`.github/workflows/pages.yml`) compila a versão web e publica no GitHub Pages.
+
 ### Instalar na TV box
 
 ```bash
@@ -105,7 +117,7 @@ Sem `adb`, dá para copiar o `app-release.apk` para um pendrive e instalar pelo 
 
 ## Editando as fases
 
-As fases ficam em `assets/tiles/fase1.tmx`, `fase2.tmx` e `fase3.tmx`, no formato do [Tiled](https://www.mapeditor.org/) (gratuito):
+As fases ficam em `assets/tiles/fase1.tmx` a `fase5.tmx`, no formato do [Tiled](https://www.mapeditor.org/) (gratuito):
 
 - camada **terreno**: blocos em que o herói pisa e bate;
 - camada **decoracao**: plantas, placas e árvores, sem colisão;
@@ -122,6 +134,10 @@ As músicas são composições originais, geradas por `ferramentas/gerar_musica.
 ```bash
 python3 ferramentas/gerar_musica.py
 ```
+
+## Ícone
+
+O ícone do app e da versão web é gerado por `ferramentas/gerar_icone.py` (precisa do Pillow) a partir do sprite do Guerreiro.
 
 ## Estrutura
 

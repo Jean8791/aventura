@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Aventura: jogo de plataforma em Flutter e Flame. Escolha um herói com um poder, enfrente monstros e o Feiticeiro das Sombras, sozinho ou em dupla.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Aventura">
+  <meta name="theme-color" content="#74C8EC">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <title>Aventura</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #74C8EC; overflow: hidden; }
+    #carregando {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      font: 700 24px system-ui, sans-serif; color: #fff;
+      text-shadow: 0 2px 0 #3b2a50;
+    }
+    #carregando img { width: 96px; height: 96px; image-rendering: pixelated; border-radius: 16px; }
+  </style>
+</head>
+<body>
+  <div id="carregando"><img src="icons/Icon-192.png" alt=""><span>Carregando a aventura…</span></div>
+  <script>
+    window.addEventListener('flutter-first-frame', () => document.getElementById('carregando')?.remove());
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 enum Acao { esquerda, direita, pulo, ataque }
@@ -57,7 +58,7 @@ class EntradaDeControles {
   bool? _jogandoEmDupla;
 
   void avisarJogandoEmDupla(bool emDupla) {
-    if (_jogandoEmDupla == emDupla) {
+    if (kIsWeb || _jogandoEmDupla == emDupla) {
       return;
     }
     _jogandoEmDupla = emDupla;
@@ -69,7 +70,40 @@ class EntradaDeControles {
 
   Stream<EventoDeControle> get eventos => _eventos.stream;
 
+  static final _codigosDoTeclado = {
+    LogicalKeyboardKey.arrowLeft: 21,
+    LogicalKeyboardKey.arrowRight: 22,
+    LogicalKeyboardKey.arrowUp: 19,
+    LogicalKeyboardKey.arrowDown: 20,
+    LogicalKeyboardKey.enter: 66,
+    LogicalKeyboardKey.numpadEnter: 160,
+    LogicalKeyboardKey.space: 62,
+    LogicalKeyboardKey.keyW: 51,
+    LogicalKeyboardKey.keyA: 29,
+    LogicalKeyboardKey.keyS: 47,
+    LogicalKeyboardKey.keyD: 32,
+    LogicalKeyboardKey.keyX: 52,
+    LogicalKeyboardKey.keyJ: 38,
+  };
+
+  bool _receberTecladoDaWeb(KeyEvent evento) {
+    final codigo = _codigosDoTeclado[evento.logicalKey];
+    if (codigo != null && evento is! KeyRepeatEvent) {
+      _receber({
+        'tipo': 'tecla',
+        'origem': 'teclado',
+        'codigo': codigo,
+        'apertou': evento is KeyDownEvent,
+      });
+    }
+    return false;
+  }
+
   void iniciar() {
+    if (kIsWeb) {
+      HardwareKeyboard.instance.addHandler(_receberTecladoDaWeb);
+      return;
+    }
     _assinatura ??= _canal.receiveBroadcastStream().listen(
       _receber,
       onError: (_) {},
@@ -107,6 +141,9 @@ class EntradaDeControles {
   }
 
   void encerrar() {
+    if (kIsWeb) {
+      HardwareKeyboard.instance.removeHandler(_receberTecladoDaWeb);
+    }
     _assinatura?.cancel();
     _assinatura = null;
   }
