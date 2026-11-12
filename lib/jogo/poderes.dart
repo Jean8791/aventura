@@ -177,7 +177,7 @@ class BolaDeFogo extends Poder {
   @override
   Future<void> onLoad() async {
     _velocidade.setValues(direcao * 170, -60);
-    Sons.tocar('fogo', volume: 0.5);
+    Sons.tocar('fogo', volume: 0.6);
   }
 
   @override

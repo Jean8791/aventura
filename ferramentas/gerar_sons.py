@@ -245,6 +245,20 @@ def fogo_b():
     return saida
 
 
+def fogo_c():
+    """Puf! seco no início (ataque forte) e chiado curto de chama."""
+    rng = random.Random(33)
+    n, filtro, osc = amostras(0.26), PassaBaixa(), Oscilador()
+    puf = amostras(0.03)
+    saida = []
+    for i in range(n):
+        estouro = ruido(rng) * max(0.0, 1 - i / puf) * 1.2
+        chama = 1.3 * filtro(ruido(rng), varredura(4000, 600, i, n)) * envelope(i, n, ataque=0.002, curva=1.4)
+        tom = 0.35 * osc.quadrada(varredura(520, 140, i, n), 0.4) * envelope(i, n, ataque=0.001, curva=2)
+        saida.append(math.tanh(2.5 * (estouro + chama + tom)))  # saturação: soa mais cheio
+    return saida
+
+
 # ---------- terra ----------
 
 def terra_a():
@@ -307,7 +321,7 @@ SONS = {
     "dano": (dano_a, dano_b),
     "espada": (espada_a, espada_b),
     "raio": (raio_a, raio_b),
-    "fogo": (fogo_a, fogo_b),
+    "fogo": (fogo_a, fogo_b, fogo_c),
     "terra": (terra_a, terra_b),
     "bolha": (bolha_a, bolha_b, bolha_c),
 }
@@ -318,7 +332,7 @@ ESCOLHIDOS = {
     "dano": "b",
     "espada": "a",
     "raio": "a",
-    "fogo": "b",
+    "fogo": "c",  # a "b" tinha ataque fraco e parecia atrasada com a música por cima
     "terra": "b",
     "bolha": "c",  # a "a" (seno grave) atrasava e sumia no alto-falante do celular
 }
