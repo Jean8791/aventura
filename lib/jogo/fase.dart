@@ -440,8 +440,12 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       .reduce((a, b) => a < b ? a : b);
 
   PedraMagica? criarPedraNaFrente(Heroi heroi) {
-    // No ar, o bloco aparece logo abaixo dos pés (dá para subir nele).
+    // No ar, o bloco aparece logo abaixo dos pés (dá para subir nele), mas
+    // no máximo 3 blocos na tela: sem "escada infinita".
     if (!heroi.noChao) {
+      if (_pedrasAtivas.length >= _maximoDePedras) {
+        return null;
+      }
       final coluna = (heroi.center.x / tamanhoBloco).floor();
       final linha = ((heroi.position.y + heroi.size.y) / tamanhoBloco).ceil();
       if (linha < linhas && !solido(coluna, linha)) {

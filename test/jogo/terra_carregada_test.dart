@@ -253,5 +253,26 @@ void main() {
       final pedra = fase.criarPedraNaFrente(heroi)!;
       expect(pedra.coluna, greaterThan(coluna));
     });
+
+    testWidgets('no ar, no máximo 3 blocos (sem escada infinita)', (
+      tester,
+    ) async {
+      await preparar(tester);
+      final fase = jogo.fase!;
+      final (coluna, chao) = chaoLivre(fase);
+      final heroi = fase.heroi..noChao = false;
+      final criadas = <PedraMagica?>[];
+      for (var i = 0; i < 4; i++) {
+        heroi.position = Vector2(
+          (coluna + i * 2) * tamanhoBloco + 3,
+          (chao - 3) * tamanhoBloco - 16 - 4,
+        );
+        criadas.add(fase.criarPedraNaFrente(heroi));
+      }
+      expect(criadas.take(3).every((p) => p != null), isTrue);
+      expect(criadas.last, isNull);
+      await tester.runAsync(jogo.ready);
+      expect(fase.children.whereType<PedraMagica>(), hasLength(3));
+    });
   });
 }
