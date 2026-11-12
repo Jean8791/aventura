@@ -36,7 +36,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   static const overlayPausa = 'pausa';
 
   /// Tema geral de aventura: menus (jogadores, herói, fase) e créditos.
-  static const musicaDosMenus = 'musica_aventura.mp3';
+  static const musicaDosMenus = 'musica_aventura.ogg';
 
   final List<Controle> controles = [Controle(), Controle()];
   final EntradaDeControles _entrada = EntradaDeControles();
