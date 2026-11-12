@@ -259,6 +259,85 @@ def fogo_c():
     return saida
 
 
+def fogo_d():
+    """Fwoosh: chama que acende num sopro (faixa de ruído que sobe e desce)."""
+    rng = random.Random(34)
+    n, faixa = amostras(0.32), PassaFaixa()
+    saida, tremor = [], 1.0
+    for i in range(n):
+        p = i / n
+        if i % amostras(0.02) == 0:
+            tremor = rng.uniform(0.7, 1.0)
+        centro = 900 + 2200 * math.sin(math.pi * min(1.0, p * 1.6))
+        corpo = 3.0 * faixa(ruido(rng), centro) * tremor
+        saida.append(math.tanh(2.0 * corpo) * envelope(i, n, ataque=0.004, curva=1.3))
+    return saida
+
+
+def fogo_e():
+    """Bola de fogo 8-bit: tom quadrado caindo com chiado, bem de videogame."""
+    rng = random.Random(35)
+    n, osc, filtro = amostras(0.24), Oscilador(), PassaBaixa()
+    saida = []
+    for i in range(n):
+        tom = 0.5 * osc.quadrada(varredura(1100, 260, i, n), 0.5)
+        chiado = 0.6 * filtro(ruido(rng), 3000)
+        saida.append((tom + chiado) * envelope(i, n, ataque=0.002, curva=1.6))
+    return saida
+
+
+def fogo_f():
+    """Labareda: sopro curto e estalinhos de brasa bem audíveis."""
+    rng = random.Random(36)
+    n, faixa, estalos = amostras(0.34), PassaFaixa(), PassaFaixa()
+    saida, estalo = [], 0.0
+    for i in range(n):
+        if rng.random() < 0.004:
+            estalo = 1.0
+        estalo *= 0.97
+        sopro = 1.8 * faixa(ruido(rng), 1400) * envelope(i, n, ataque=0.003, curva=1.8)
+        saida.append(math.tanh(2.2 * (sopro + 1.4 * estalo * estalos(ruido(rng), 3500))))
+    return saida
+
+
+# ---------- quique da bola de fogo (toca a cada batida no chão) ----------
+
+def fogo_quique_a():
+    """Pof + chiado: batida curta e a chama chiando ao tocar o chão."""
+    rng = random.Random(37)
+    n, grave, faixa = amostras(0.16), Oscilador(), PassaFaixa()
+    saida = []
+    for i in range(n):
+        batida = 0.8 * grave.triangular(varredura(520, 220, i, n)) * envelope(i, n, ataque=0.001, curva=3)
+        chiado = 1.6 * faixa(ruido(rng), 4000) * envelope(i, n, ataque=0.002, curva=1.5)
+        saida.append(math.tanh(1.8 * (batida + chiado)))
+    return saida
+
+
+def fogo_quique_b():
+    """Boing de fogo 8-bit: blip que sobe (como bola quicando) com chiado."""
+    rng = random.Random(38)
+    n, osc, filtro = amostras(0.12), Oscilador(), PassaBaixa()
+    saida = []
+    for i in range(n):
+        tom = 0.55 * osc.quadrada(varredura(380, 900, i, n), 0.4)
+        chiado = 0.4 * filtro(ruido(rng), 3500)
+        saida.append((tom + chiado) * envelope(i, n, ataque=0.001, curva=1.8))
+    return saida
+
+
+def fogo_quique_c():
+    """Tsss: só o chiado da brasa batendo, com um estalinho no início."""
+    rng = random.Random(39)
+    n, faixa = amostras(0.14), PassaFaixa()
+    saida = []
+    for i in range(n):
+        estalo = 1.2 * ruido(rng) * max(0.0, 1 - i / amostras(0.012))
+        chiado = 1.8 * faixa(ruido(rng), 5000) * envelope(i, n, ataque=0.004, curva=1.2)
+        saida.append(math.tanh(1.6 * (estalo + chiado)))
+    return saida
+
+
 # ---------- terra ----------
 
 def terra_a():
@@ -363,7 +442,8 @@ SONS = {
     "dano": (dano_a, dano_b),
     "espada": (espada_a, espada_b),
     "raio": (raio_a, raio_b),
-    "fogo": (fogo_a, fogo_b, fogo_c),
+    "fogo": (fogo_a, fogo_b, fogo_c, fogo_d, fogo_e, fogo_f),
+    "fogo_quique": (fogo_quique_a, fogo_quique_b, fogo_quique_c),
     "terra": (terra_a, terra_b),
     "bolha": (bolha_a, bolha_b, bolha_c),
     "carga": (carga_a, carga_b, carga_c),
@@ -375,7 +455,8 @@ ESCOLHIDOS = {
     "dano": "b",
     "espada": "a",
     "raio": "a",
-    "fogo": "c",  # a "b" tinha ataque fraco e parecia atrasada com a música por cima
+    "fogo": "f",  # labareda; a "b" tinha ataque fraco e a "c" (puf seco) soou estranha
+    "fogo_quique": "c",
     "terra": "b",
     "bolha": "c",  # a "a" (seno grave) atrasava e sumia no alto-falante do celular
     "carga": "c",
@@ -389,12 +470,12 @@ def main():
     if previa is not None:
         previa.mkdir(parents=True, exist_ok=True)
         for nome, versoes in SONS.items():
-            for letra, gerar in zip("abc", versoes):
+            for letra, gerar in zip("abcdef", versoes):
                 salvar(gerar(), previa / f"{nome}_{letra}.wav")
         return
     destino = Path(__file__).resolve().parent.parent / "assets" / "audio"
     for nome, letra in ESCOLHIDOS.items():
-        salvar(SONS[nome]["abc".index(letra)](), destino / f"{nome}.wav")
+        salvar(SONS[nome]["abcdef".index(letra)](), destino / f"{nome}.wav")
 
 
 if __name__ == "__main__":

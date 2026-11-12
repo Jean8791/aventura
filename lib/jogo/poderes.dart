@@ -551,6 +551,8 @@ class BolaDeFogo extends Poder {
           (((position.y + meio) / tamanhoBloco).floor()) * tamanhoBloco - meio;
       _velocidade.y = -210;
       _quiques++;
+      // "Tsss" a cada quique, um pouco mais baixo a cada vez.
+      Sons.tocar('fogo_quique', volume: max(0.3, 0.7 - 0.1 * _quiques));
     }
     if (acertarInimigos(toRect().inflate(2), Golpe.fogo, atravessa: false) >
             0 ||
