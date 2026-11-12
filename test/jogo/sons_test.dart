@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:aventura/jogo/fases.dart';
+import 'package:aventura/jogo/sons.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Nomes passados a `Sons.tocar(...)` em todo o código do jogo.
@@ -37,5 +39,38 @@ void main() {
         reason: '"${arquivo.single}" fora de Sons._efeitos',
       );
     }
+  });
+
+  test('toda fase tem música e som de fundo com arquivo', () {
+    for (final fase in fases) {
+      expect(
+        File('assets/audio/${fase.musica}').existsSync(),
+        isTrue,
+        reason: 'música de ${fase.nome}',
+      );
+      expect(
+        File('assets/audio/${fase.ambiente}').existsSync(),
+        isTrue,
+        reason: 'som de fundo de ${fase.nome}',
+      );
+    }
+  });
+
+  test('cada fase tem música própria', () {
+    expect(fases.map((f) => f.musica).toSet(), hasLength(fases.length));
+  });
+
+  group('faixa de fundo', () {
+    test('música ligada toca a música', () {
+      expect(Sons.faixaDeFundo(true, 'm.ogg', 'a.ogg'), 'm.ogg');
+    });
+
+    test('música desligada toca o som de fundo', () {
+      expect(Sons.faixaDeFundo(false, 'm.ogg', 'a.ogg'), 'a.ogg');
+    });
+
+    test('música desligada sem som de fundo fica em silêncio', () {
+      expect(Sons.faixaDeFundo(false, 'm.ogg', null), isNull);
+    });
   });
 }

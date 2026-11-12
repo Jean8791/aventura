@@ -3,8 +3,8 @@
 
 Músicas originais em estilo 8-bit: melodia em onda quadrada, baixo em onda triangular e
 bateria de ruído, com 16 compassos que repetem sem emenda.
-  musica_fase1.wav  Dó maior, 150 BPM, alegre
-  musica_chefe.wav  Lá menor, 168 BPM, para a luta contra o chefão
+  musica_fase1.wav  Dó maior, 150 BPM, alegre (não usada mais; base da música dos créditos)
+  musica_chefe.wav  Lá menor, 168 BPM (não gerada mais: o chefe usa música orquestral)
   musica_creditos.wav  reprise da fase 1, 110 BPM, mais calma, para os créditos
 
 Notação das partes: cada compasso tem 8 colcheias separadas por espaço.
@@ -188,8 +188,8 @@ def compor(nome, melodia, acordes, bpm, padrao_do_baixo, bumbos):
 
 
 def main():
-    compor("musica_fase1.wav", MELODIA, ACORDES, 150, "{t} . {q} . {t} . {q} {t}", (0, 4))
-    compor("musica_chefe.wav", MELODIA_CHEFE, ACORDES_CHEFE, 168, "{t} {t} {q} {t} {t} {t} {q} {t}", (0, 3, 4, 6))
+    # As fases e o chefe usam músicas orquestrais do OpenGameArt (ver assets/CREDITOS-AUDIO.md).
+    # Para regerar as antigas em 8-bit: musica_fase1.wav (150 BPM) e musica_chefe.wav (168 BPM).
     compor("musica_creditos.wav", MELODIA, ACORDES, 110, "{t} . . . {q} . . .", (0,))
 
 

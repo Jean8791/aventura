@@ -69,9 +69,18 @@ void main() {
     expect(find.textContaining('Flutter'), findsOneWidget);
     expect(find.textContaining('Flame'), findsOneWidget);
     expect(find.textContaining('Kenney'), findsOneWidget);
-    expect(find.textContaining('CC0'), findsOneWidget);
-    expect(find.textContaining('geradas por script'), findsOneWidget);
+    expect(find.textContaining('CC0'), findsWidgets);
+    expect(find.textContaining('gerados por script'), findsOneWidget);
     expect(find.textContaining('sem fins lucrativos'), findsOneWidget);
+  });
+
+  testWidgets('credita os autores das músicas (CC-BY exige)', (tester) async {
+    await _mostrar(tester);
+
+    expect(find.textContaining('Ice Cave'), findsOneWidget);
+    expect(find.textContaining('TAD'), findsOneWidget);
+    expect(find.textContaining('CC-BY 4.0'), findsOneWidget);
+    expect(find.textContaining('OpenGameArt'), findsWidgets);
   });
 
   testWidgets('título no singular e no plural', (tester) async {

@@ -109,8 +109,27 @@ class _TelaCreditosState extends State<TelaCreditos> {
               const SizedBox(height: 60),
               const _Secao('Como foi feito'),
               const _Linha('Flutter + Flame'),
-              const _Linha('Arte e sons: Kenney (CC0)'),
-              const _Linha('Músicas geradas por script'),
+              const _Linha('Arte e alguns sons: Kenney (CC0)'),
+              const _Linha(
+                'Efeitos do herói e música dos créditos: gerados por script',
+              ),
+              const SizedBox(height: 40),
+              const _Secao('Músicas e sons de fundo'),
+              const _Linha('do OpenGameArt.org'),
+              const _Linha('"Beautiful Forest" — nene (CC0)'),
+              const _Linha(
+                '"Ice Cave" — TAD (CC-BY 4.0)\n'
+                'creativecommons.org/licenses/by/4.0',
+              ),
+              const _Linha('"Desert calmness" — Dizzy Crow (CC0)'),
+              const _Linha(
+                '"Crystal Cave" — Alex McCulloch / Pro Sensory (CC0)',
+              ),
+              const _Linha('"Fall of Nightmares" — nene (CC0)'),
+              const _Linha(
+                'Sons de fundo: TinyWorlds, Spring Spring, PagDev,\n'
+                'JaggedStone e qubodup (CC0)',
+              ),
               const SizedBox(height: 60),
               const _Linha(
                 'Jogo feito só para a diversão em família,\n'

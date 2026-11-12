@@ -22,12 +22,9 @@ class Sons {
     'bolha.wav': 3,
     'acerto.ogg': 3,
   };
-  static const _musicas = [
-    'musica_fase1.wav',
-    'musica_chefe.wav',
-    'musica_creditos.wav',
-  ];
-  static String _musica = 'musica_fase1.wav';
+  static String? _musica;
+  static String? _ambiente;
+  static String? _tocandoAgora;
   static const _volumeDaMusica = 0.35;
 
   static final Map<String, List<AudioPlayer>> _tocadores = {};
@@ -40,7 +37,8 @@ class Sons {
 
   static Future<void> carregar() async {
     FlameAudio.bgm.initialize();
-    await FlameAudio.audioCache.loadAll([..._efeitos.keys, ..._musicas]);
+    // Músicas e sons de fundo carregam só quando tocam (são pesados).
+    await FlameAudio.audioCache.loadAll(_efeitos.keys.toList());
     final contexto = AudioContextConfig(
       focus: AudioContextConfigFocus.mixWithOthers,
     ).build();
@@ -80,45 +78,84 @@ class Sons {
         .catchError((_) {});
   }
 
-  static void iniciarMusica([String? arquivo]) {
-    if (arquivo != null) {
-      _musica = arquivo;
-    }
-    _musicaTocando = true;
-    if (musicaLigada.value) {
-      FlameAudio.bgm.play(_musica, volume: _volumeDaMusica);
+  /// Com a música ligada toca a música; desligada, o som de fundo (se houver).
+  static String? faixaDeFundo(
+    bool musicaLigada,
+    String? musica,
+    String? ambiente,
+  ) => musicaLigada ? musica : ambiente;
+
+  /// Copia a música e o som de fundo para o cache antes de a fase começar,
+  /// para a troca no meio do jogo não ter de carregar arquivo grande.
+  static Future<void> prepararFaixas(List<String> arquivos) async {
+    try {
+      await FlameAudio.audioCache.loadAll(arquivos);
+    } catch (erro) {
+      debugPrint('Sons: não carregou $arquivos: $erro');
     }
   }
 
-  static void pausarMusica() {
-    if (_musicaTocando && musicaLigada.value) {
-      FlameAudio.bgm.pause();
-    }
+  /// Começa a trilha de uma tela: [musica] e, opcionalmente, o som de fundo
+  /// que a substitui quando a música está desligada.
+  static void iniciarMusica(String musica, {String? ambiente}) {
+    _musica = musica;
+    _ambiente = ambiente;
+    _musicaTocando = true;
+    _tocarFaixa();
   }
+
+  // O Bgm.play são vários passos assíncronos no mesmo tocador. Duas chamadas
+  // sobrepostas se atropelam (uma fica esperando para sempre e a música errada
+  // volta). Por isso tudo do áudio de fundo passa por esta fila, um de cada vez.
+  static Future<void> _fila = Future.value();
+
+  static void _enfileirar(Future<void> Function() acao) {
+    _fila = _fila.then((_) async {
+      try {
+        await acao().timeout(const Duration(seconds: 15));
+      } catch (erro) {
+        debugPrint('Sons: falha no áudio de fundo: $erro');
+      }
+    });
+  }
+
+  /// Aplica o estado atual (não o do momento do pedido): vale o último toque.
+  static void _tocarFaixa() => _enfileirar(() async {
+    final faixa = _musicaTocando
+        ? faixaDeFundo(musicaLigada.value, _musica, _ambiente)
+        : null;
+    if (faixa == null) {
+      _tocandoAgora = null;
+      await FlameAudio.bgm.stop();
+    } else if (faixa != _tocandoAgora) {
+      _tocandoAgora = faixa;
+      await FlameAudio.bgm.play(faixa, volume: _volumeDaMusica);
+    } else if (!FlameAudio.bgm.isPlaying) {
+      await FlameAudio.bgm.resume();
+    }
+  });
+
+  static void pausarMusica() => _enfileirar(() async {
+    if (_tocandoAgora != null) {
+      await FlameAudio.bgm.pause();
+    }
+  });
 
   static void retomarMusica() {
-    if (!_musicaTocando) {
-      iniciarMusica();
-    } else if (musicaLigada.value) {
-      FlameAudio.bgm.resume();
-    }
+    _musicaTocando = true;
+    _tocarFaixa();
   }
 
   static void pararMusica() {
     _musicaTocando = false;
-    FlameAudio.bgm.stop();
+    _tocarFaixa();
   }
 
   static void alternarMusica() {
     musicaLigada.value = !musicaLigada.value;
     Progresso.musicaLigada = musicaLigada.value;
-    if (!_musicaTocando) {
-      return;
-    }
-    if (musicaLigada.value) {
-      FlameAudio.bgm.play(_musica, volume: _volumeDaMusica);
-    } else {
-      FlameAudio.bgm.stop();
+    if (_musicaTocando) {
+      _tocarFaixa();
     }
   }
 }

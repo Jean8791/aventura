@@ -8,7 +8,8 @@ class DadosDaFase {
     required this.ceu,
     required this.icone,
     required this.cor,
-    this.musica = 'musica_fase1.wav',
+    required this.musica,
+    required this.ambiente,
     this.tilePlataforma = 1,
     this.chefe = false,
   });
@@ -20,6 +21,9 @@ class DadosDaFase {
   final IconData icone;
   final Color cor;
   final String musica;
+
+  /// Som de fundo que toca no lugar da música quando ela está desligada.
+  final String ambiente;
   final int tilePlataforma;
   final bool chefe;
 }
@@ -32,6 +36,8 @@ const fases = [
     ceu: Color(0xFFDFF6F5),
     icone: Icons.park_rounded,
     cor: Color(0xFF7CC35A),
+    musica: 'musica_floresta.ogg',
+    ambiente: 'ambiente_floresta.mp3',
   ),
   DadosDaFase(
     nome: 'Montanha Gelada',
@@ -40,6 +46,8 @@ const fases = [
     ceu: Color(0xFFEAF4FF),
     icone: Icons.ac_unit_rounded,
     cor: Color(0xFF8FD3FF),
+    musica: 'musica_gelo.ogg',
+    ambiente: 'ambiente_gelo.ogg',
   ),
   DadosDaFase(
     nome: 'Deserto de Fogo',
@@ -48,6 +56,8 @@ const fases = [
     ceu: Color(0xFFFBC97B),
     icone: Icons.local_fire_department_rounded,
     cor: Color(0xFFFF8A3D),
+    musica: 'musica_deserto.wav',
+    ambiente: 'ambiente_deserto.wav',
   ),
   DadosDaFase(
     nome: 'Caverna de Cristal',
@@ -56,6 +66,8 @@ const fases = [
     ceu: Color(0xFF251F3D),
     icone: Icons.diamond_rounded,
     cor: Color(0xFFB794F6),
+    musica: 'musica_caverna.mp3',
+    ambiente: 'ambiente_caverna.ogg',
     tilePlataforma: 141,
   ),
   DadosDaFase(
@@ -66,6 +78,7 @@ const fases = [
     icone: Icons.auto_fix_high_rounded,
     cor: Color(0xFFFF4FD8),
     musica: 'musica_chefe.wav',
+    ambiente: 'ambiente_covil.ogg',
     tilePlataforma: 141,
     chefe: true,
   ),

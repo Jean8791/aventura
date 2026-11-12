@@ -328,10 +328,19 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     fase = nova;
     world = nova;
     camera.world = nova;
-    await nova.loaded;
+    await Future.wait([
+      nova.loaded,
+      Sons.prepararFaixas([
+        fases[indiceFase].musica,
+        fases[indiceFase].ambiente,
+      ]),
+    ]);
 
     overlays.addAll([overlayHud, overlayControles]);
-    Sons.iniciarMusica(fases[indiceFase].musica);
+    Sons.iniciarMusica(
+      fases[indiceFase].musica,
+      ambiente: fases[indiceFase].ambiente,
+    );
     _focarNoJogo();
   }
 
