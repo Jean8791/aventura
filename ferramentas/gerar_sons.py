@@ -1,0 +1,343 @@
+#!/usr/bin/env python3
+"""Sintetiza os efeitos sonoros do herói (pulo, dano e poderes) em WAV mono.
+
+Sons originais em estilo 8-bit, feitos só com Python puro (sem dependências):
+osciladores, ruído filtrado, envelopes e varreduras de tom.
+
+Uso:
+  python3 ferramentas/gerar_sons.py                gera as versões escolhidas em assets/audio/
+  python3 ferramentas/gerar_sons.py --previa DIR   gera as versões a/b de cada som em DIR
+"""
+
+import argparse
+import math
+import random
+import struct
+import wave
+from pathlib import Path
+
+TAXA = 22050
+
+
+# ---------- blocos básicos ----------
+
+def amostras(duracao):
+    return int(duracao * TAXA)
+
+
+def envelope(i, total, ataque=0.005, soltura=0.05, curva=1.0):
+    """Ataque linear, decaimento até zero com a curva dada e soltura suave no fim."""
+    t = i / TAXA
+    dur = total / TAXA
+    if t < ataque:
+        return t / ataque
+    resto = 1 - (t - ataque) / max(1e-6, dur - ataque)
+    valor = max(0.0, resto) ** curva
+    if dur - t < soltura:
+        valor *= max(0.0, (dur - t) / soltura)
+    return valor
+
+
+def varredura(f0, f1, i, total, expo=True):
+    p = i / max(1, total - 1)
+    if expo:
+        return f0 * (f1 / f0) ** p
+    return f0 + (f1 - f0) * p
+
+
+class Oscilador:
+    def __init__(self):
+        self.fase = 0.0
+
+    def avancar(self, freq):
+        self.fase = (self.fase + freq / TAXA) % 1.0
+        return self.fase
+
+    def quadrada(self, freq, ciclo=0.5):
+        return 1.0 if self.avancar(freq) < ciclo else -1.0
+
+    def triangular(self, freq):
+        f = self.avancar(freq)
+        return 4 * f - 1 if f < 0.5 else 3 - 4 * f
+
+    def seno(self, freq):
+        return math.sin(2 * math.pi * self.avancar(freq))
+
+
+class PassaBaixa:
+    def __init__(self):
+        self.y = 0.0
+
+    def __call__(self, x, corte):
+        a = 1 - math.exp(-2 * math.pi * corte / TAXA)
+        self.y += a * (x - self.y)
+        return self.y
+
+
+class PassaFaixa:
+    """Duas passa-baixas em cascata menos uma mais grave: faixa em torno do corte."""
+
+    def __init__(self):
+        self.alta = PassaBaixa()
+        self.baixa = PassaBaixa()
+
+    def __call__(self, x, centro):
+        return self.alta(x, centro * 1.6) - self.baixa(x, centro * 0.6)
+
+
+def ruido(rng):
+    return rng.uniform(-1, 1)
+
+
+def misturar(*faixas):
+    total = max(len(f) for f in faixas)
+    saida = [0.0] * total
+    for f in faixas:
+        for i, v in enumerate(f):
+            saida[i] += v
+    return saida
+
+
+def normalizar(sinal, pico=0.8):
+    maior = max(abs(v) for v in sinal) or 1.0
+    return [v * pico / maior for v in sinal]
+
+
+def salvar(sinal, destino):
+    sinal = normalizar(sinal)
+    with wave.open(str(destino), "wb") as arquivo:
+        arquivo.setnchannels(1)
+        arquivo.setsampwidth(2)
+        arquivo.setframerate(TAXA)
+        arquivo.writeframes(b"".join(struct.pack("<h", int(v * 32000)) for v in sinal))
+    print(f"{destino.name}: {len(sinal) / TAXA:.2f} s")
+
+
+# ---------- pulo ----------
+
+def pulo_a():
+    """Pulinho 8-bit: quadrada fina subindo rápido."""
+    n, osc = amostras(0.16), Oscilador()
+    return [0.5 * osc.quadrada(varredura(320, 760, i, n), 0.25) * envelope(i, n, soltura=0.04)
+            for i in range(n)]
+
+
+def pulo_b():
+    """Boing macio: triangular subindo com um tremidinho."""
+    n, osc = amostras(0.22), Oscilador()
+    saida = []
+    for i in range(n):
+        vibrato = 1 + 0.04 * math.sin(2 * math.pi * 28 * i / TAXA)
+        f = varredura(220, 620, i, n) * vibrato
+        saida.append(0.8 * osc.triangular(f) * envelope(i, n, soltura=0.06, curva=0.7))
+    return saida
+
+
+# ---------- dano ----------
+
+def dano_a():
+    """"Ai!" curto: duas notas descendo, quadrada suave."""
+    saida = []
+    for f0, f1, dur in ((660, 520, 0.08), (440, 300, 0.14)):
+        n, osc = amostras(dur), Oscilador()
+        saida += [0.45 * osc.quadrada(varredura(f0, f1, i, n), 0.5) * envelope(i, n, soltura=0.02)
+                  for i in range(n)]
+    return saida
+
+
+def dano_b():
+    """"Bonk" de desenho: triangular caindo com baque grave."""
+    rng = random.Random(7)
+    n, osc, grave, filtro = amostras(0.26), Oscilador(), Oscilador(), PassaBaixa()
+    saida = []
+    for i in range(n):
+        e = envelope(i, n, curva=1.6)
+        tom = 0.7 * osc.triangular(varredura(520, 170, i, n))
+        baque = 0.5 * grave.seno(varredura(140, 60, i, n)) * envelope(i, n, curva=3)
+        estalo = 0.4 * filtro(ruido(rng), 1500) * max(0.0, 1 - i / amostras(0.03))
+        saida.append((tom + baque) * e + estalo)
+    return saida
+
+
+# ---------- espada (Guerreiro) ----------
+
+def _vush(rng, dur, f0, f1, volume=1.0):
+    n, filtro = amostras(dur), PassaFaixa()
+    saida = []
+    for i in range(n):
+        p = i / n
+        forma = math.sin(math.pi * p) ** 1.5
+        saida.append(volume * 2.2 * filtro(ruido(rng), varredura(f0, f1, i, n)) * forma)
+    return saida
+
+
+def _shing(dur, frequencias, volume=0.25):
+    n = amostras(dur)
+    oscs = [Oscilador() for _ in frequencias]
+    return [volume * sum(o.seno(f) for o, f in zip(oscs, frequencias)) * envelope(i, n, curva=2.5)
+            for i in range(n)]
+
+
+def espada_a():
+    """Vush + brilho metálico."""
+    rng = random.Random(11)
+    vush = _vush(rng, 0.22, 700, 2600)
+    atraso = [0.0] * amostras(0.07)
+    return misturar(vush, atraso + _shing(0.32, (2489, 3150, 4720, 6010)))
+
+
+def espada_b():
+    """Vush mais encorpado, sem brilho (mais "pesado")."""
+    rng = random.Random(12)
+    return misturar(_vush(rng, 0.26, 400, 1700, 1.2), _vush(rng, 0.2, 900, 3000, 0.5))
+
+
+# ---------- raio ----------
+
+def raio_a():
+    """Estalo elétrico: zumbido grave com faíscas aleatórias."""
+    rng = random.Random(21)
+    n, osc, filtro = amostras(0.42), Oscilador(), PassaBaixa()
+    saida, rajada = [], 0.0
+    for i in range(n):
+        if rng.random() < 0.004:
+            rajada = 1.0
+        rajada *= 0.996
+        zumbido = 0.35 * osc.quadrada(110 + rng.uniform(-25, 25), 0.3)
+        faisca = rajada * (ruido(rng) - filtro(ruido(rng), 2000))
+        saida.append((zumbido + 0.9 * faisca) * envelope(i, n, ataque=0.002, curva=1.3))
+    return saida
+
+
+def raio_b():
+    """Zap: quadrada despencando com modulação rápida."""
+    n, osc, mod = amostras(0.3), Oscilador(), Oscilador()
+    return [0.5 * osc.quadrada(varredura(1800, 160, i, n)) * (0.6 + 0.4 * mod.quadrada(55))
+            * envelope(i, n, ataque=0.002, curva=1.2) for i in range(n)]
+
+
+# ---------- fogo ----------
+
+def fogo_a():
+    """Fuum: ruído abafado que abre e fecha, com grave crescendo."""
+    rng = random.Random(31)
+    n, filtro, osc = amostras(0.38), PassaBaixa(), Oscilador()
+    saida = []
+    for i in range(n):
+        p = i / n
+        corte = 300 + 2500 * math.sin(math.pi * min(1.0, p * 1.3)) ** 2
+        chiado = 1.6 * filtro(ruido(rng), corte)
+        grave = 0.35 * osc.seno(varredura(70, 110, i, n))
+        saida.append((chiado + grave) * math.sin(math.pi * p) ** 0.8)
+    return saida
+
+
+def fogo_b():
+    """Bola de fogo: sopro curto descendo e estalinhos de brasa."""
+    rng = random.Random(32)
+    n, filtro, osc = amostras(0.34), PassaBaixa(), Oscilador()
+    saida = []
+    for i in range(n):
+        sopro = 1.4 * filtro(ruido(rng), varredura(3500, 400, i, n))
+        tom = 0.25 * osc.quadrada(varredura(380, 120, i, n), 0.4)
+        brasa = 0.7 * ruido(rng) if rng.random() < 0.006 else 0.0
+        saida.append((sopro + tom) * envelope(i, n, ataque=0.01, curva=1.1) + brasa)
+    return saida
+
+
+# ---------- terra ----------
+
+def terra_a():
+    """Estrondo: baque grave com pedrinhas batendo."""
+    rng = random.Random(41)
+    n, grave, filtro, pedras = amostras(0.5), Oscilador(), PassaBaixa(), PassaFaixa()
+    saida, pedra = [], 0.0
+    for i in range(n):
+        baque = 0.9 * grave.seno(varredura(90, 38, i, n)) * envelope(i, n, curva=1.8)
+        ronco = 1.5 * filtro(ruido(rng), 220) * envelope(i, n, curva=1.2)
+        if i > amostras(0.05) and rng.random() < 0.0015:
+            pedra = 1.0
+        pedra *= 0.993
+        saida.append(baque + ronco + 0.9 * pedra * pedras(ruido(rng), 1800))
+    return saida
+
+
+def terra_b():
+    """Tum seco de pedra surgindo, mais curto."""
+    rng = random.Random(42)
+    n, grave, filtro = amostras(0.3), Oscilador(), PassaBaixa()
+    saida = []
+    for i in range(n):
+        baque = grave.triangular(varredura(160, 55, i, n)) * envelope(i, n, ataque=0.002, curva=2.2)
+        crec = 1.2 * filtro(ruido(rng), 900) * envelope(i, n, ataque=0.002, curva=3)
+        saida.append(0.8 * baque + crec)
+    return saida
+
+
+# ---------- água (bolha) ----------
+
+def _blup(f0, f1, dur, volume=0.7):
+    n, osc = amostras(dur), Oscilador()
+    return [volume * osc.seno(varredura(f0, f1, i, n)) * envelope(i, n, ataque=0.003, curva=1.4)
+            for i in range(n)]
+
+
+def bolha_a():
+    """Blup! grande subindo."""
+    return misturar(_blup(260, 980, 0.18), [0.0] * amostras(0.09) + _blup(420, 1300, 0.12, 0.4))
+
+
+def bolha_b():
+    """Três bolhinhas subindo em escada."""
+    saida = []
+    for f0, f1 in ((500, 1100), (650, 1400), (820, 1800)):
+        saida += _blup(f0, f1, 0.07, 0.6) + [0.0] * amostras(0.025)
+    return saida
+
+
+def bolha_c():
+    """Blup agudo e imediato (triangular), audível em alto-falante de celular."""
+    n, osc = amostras(0.15), Oscilador()
+    return [0.8 * osc.triangular(varredura(600, 1600, i, n)) * envelope(i, n, ataque=0.002, curva=1.2)
+            for i in range(n)]
+
+
+SONS = {
+    "pulo": (pulo_a, pulo_b),
+    "dano": (dano_a, dano_b),
+    "espada": (espada_a, espada_b),
+    "raio": (raio_a, raio_b),
+    "fogo": (fogo_a, fogo_b),
+    "terra": (terra_a, terra_b),
+    "bolha": (bolha_a, bolha_b, bolha_c),
+}
+
+# Versão escolhida pelo Jean de ouvido (2026-11-12).
+ESCOLHIDOS = {
+    "pulo": "b",
+    "dano": "b",
+    "espada": "a",
+    "raio": "a",
+    "fogo": "b",
+    "terra": "b",
+    "bolha": "c",  # a "a" (seno grave) atrasava e sumia no alto-falante do celular
+}
+
+
+def main():
+    argumentos = argparse.ArgumentParser(description=__doc__)
+    argumentos.add_argument("--previa", type=Path)
+    previa = argumentos.parse_args().previa
+    if previa is not None:
+        previa.mkdir(parents=True, exist_ok=True)
+        for nome, versoes in SONS.items():
+            for letra, gerar in zip("abc", versoes):
+                salvar(gerar(), previa / f"{nome}_{letra}.wav")
+        return
+    destino = Path(__file__).resolve().parent.parent / "assets" / "audio"
+    for nome, letra in ESCOLHIDOS.items():
+        salvar(SONS[nome]["abc".index(letra)](), destino / f"{nome}.wav")
+
+
+if __name__ == "__main__":
+    main()

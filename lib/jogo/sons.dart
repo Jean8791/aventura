@@ -5,21 +5,21 @@ import 'progresso.dart';
 
 class Sons {
   static const _efeitos = {
-    'pulo.ogg': 3,
+    'pulo.wav': 3,
     'moeda.ogg': 4,
     'pisao.ogg': 3,
-    'dano.ogg': 2,
+    'dano.wav': 2,
     'mola.ogg': 2,
     'checkpoint.ogg': 2,
     'vitoria.ogg': 1,
     'vitoria_final.ogg': 1,
     'chefe_derrotado.ogg': 1,
     'derrota.ogg': 1,
-    'espada.ogg': 3,
-    'raio.ogg': 3,
-    'fogo.ogg': 3,
-    'terra.ogg': 3,
-    'bolha.ogg': 3,
+    'espada.wav': 3,
+    'raio.wav': 3,
+    'fogo.wav': 3,
+    'terra.wav': 3,
+    'bolha.wav': 3,
     'acerto.ogg': 3,
   };
   static const _musicas = [
@@ -63,7 +63,9 @@ class Sons {
   }
 
   static void tocar(String nome, {double volume = 0.6}) {
-    final arquivo = '$nome.ogg';
+    final arquivo = _tocadores.containsKey('$nome.wav')
+        ? '$nome.wav'
+        : '$nome.ogg';
     final lista = _tocadores[arquivo];
     if (lista == null || lista.isEmpty) {
       return;

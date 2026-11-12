@@ -252,7 +252,7 @@ class Bolha extends Poder {
   @override
   Future<void> onLoad() async {
     _baseY = position.y;
-    Sons.tocar('bolha', volume: 0.4);
+    Sons.tocar('bolha', volume: 0.6);
   }
 
   @override
