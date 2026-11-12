@@ -31,6 +31,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   static const overlayHud = 'hud';
   static const overlayControles = 'controles';
   static const overlayVitoria = 'vitoria';
+  static const overlayCreditos = 'creditos';
   static const overlayDerrota = 'derrota';
   static const overlayPausa = 'pausa';
 
@@ -118,6 +119,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       overlays.isActive(overlayEscolha) ||
       overlays.isActive(overlayFases) ||
       overlays.isActive(overlayVitoria) ||
+      overlays.isActive(overlayCreditos) ||
       overlays.isActive(overlayDerrota) ||
       overlays.isActive(overlayPausa);
 
@@ -128,6 +130,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       !overlays.isActive(overlayEscolha) &&
       !overlays.isActive(overlayFases) &&
       !overlays.isActive(overlayVitoria) &&
+      !overlays.isActive(overlayCreditos) &&
       !overlays.isActive(overlayDerrota) &&
       !overlays.isActive(overlayPausa);
 
@@ -147,6 +150,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       overlayEscolha,
       overlayFases,
       overlayVitoria,
+      overlayCreditos,
       overlayDerrota,
       overlayPausa,
       overlayHud,
@@ -179,6 +183,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     } else if (overlays.isActive(overlayPausa)) {
       continuar();
     } else if (overlays.isActive(overlayVitoria) ||
+        overlays.isActive(overlayCreditos) ||
         overlays.isActive(overlayDerrota)) {
       abrirEscolhaDeFase();
     } else if (overlays.isActive(overlayFases)) {
@@ -416,15 +421,29 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     _focarNoJogo();
   }
 
+  /// Tela aberta ao terminar a fase: créditos depois do chefe, vitória nas outras.
+  String get overlayDoFim =>
+      fase?.dados.chefe == true ? overlayCreditos : overlayVitoria;
+
   void venceu() {
     Progresso.marcarConcluida(faseAtual);
     for (final heroi in fase?.herois ?? const <Heroi>[]) {
       heroi.congelar();
     }
+    final overlay = overlayDoFim;
     Sons.pararMusica();
-    Sons.tocar('vitoria');
     overlays.remove(overlayControles);
-    _abrirMenu(overlayVitoria);
+    _abrirMenu(overlay);
+    if (overlay == overlayCreditos) {
+      Sons.tocar('vitoria_final', volume: 0.7);
+      Future.delayed(const Duration(milliseconds: 2500), () {
+        if (overlays.isActive(overlayCreditos)) {
+          Sons.iniciarMusica('musica_creditos.wav');
+        }
+      });
+    } else {
+      Sons.tocar('vitoria');
+    }
   }
 
   @override

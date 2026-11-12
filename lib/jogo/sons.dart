@@ -12,6 +12,8 @@ class Sons {
     'mola.ogg': 2,
     'checkpoint.ogg': 2,
     'vitoria.ogg': 1,
+    'vitoria_final.ogg': 1,
+    'chefe_derrotado.ogg': 1,
     'derrota.ogg': 1,
     'espada.ogg': 3,
     'raio.ogg': 3,
@@ -20,7 +22,11 @@ class Sons {
     'bolha.ogg': 3,
     'acerto.ogg': 3,
   };
-  static const _musicas = ['musica_fase1.wav', 'musica_chefe.wav'];
+  static const _musicas = [
+    'musica_fase1.wav',
+    'musica_chefe.wav',
+    'musica_creditos.wav',
+  ];
   static String _musica = 'musica_fase1.wav';
   static const _volumeDaMusica = 0.35;
 

@@ -12,17 +12,10 @@ class TelaVitoria extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ultima = !jogo.temProximaFase;
     final encontrados = Progresso.diamantes(jogo.faseAtual).length;
     final faltam = jogo.totalDeDiamantes - encontrados;
     return _Painel(
-      titulo: jogo.fase?.dados.chefe == true
-          ? jogo.jogadores > 1
-                ? 'Vocês venceram o Feiticeiro!'
-                : 'Você venceu o Feiticeiro!'
-          : ultima
-          ? 'Você terminou a aventura!'
-          : 'Você conseguiu!',
+      titulo: 'Você conseguiu!',
       icone: Icons.emoji_events_rounded,
       corIcone: const Color(0xFFFFC93C),
       texto: 'Moedas: ${jogo.moedas.value} de ${jogo.totalDeMoedas}',
@@ -49,26 +42,24 @@ class TelaVitoria extends StatelessWidget {
         ],
       ),
       botoes: [
-        if (!ultima)
-          BotaoGrande(
-            autofocus: true,
-            aoApertar: jogo.proximaFase,
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  size: 30,
-                  color: Color(0xFF3B2B4F),
-                ),
-                SizedBox(width: 8),
-                Text('Próxima fase', style: estiloBotao),
-              ],
-            ),
-          ),
         BotaoGrande(
-          autofocus: ultima,
-          cor: ultima ? const Color(0xFFFFC93C) : Colors.white,
+          autofocus: true,
+          aoApertar: jogo.proximaFase,
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_forward_rounded,
+                size: 30,
+                color: Color(0xFF3B2B4F),
+              ),
+              SizedBox(width: 8),
+              Text('Próxima fase', style: estiloBotao),
+            ],
+          ),
+        ),
+        BotaoGrande(
+          cor: Colors.white,
           aoApertar: () => jogo.comecar(jogo.faseAtual),
           child: const Row(
             mainAxisSize: MainAxisSize.min,

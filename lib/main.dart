@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'jogo/aventura_jogo.dart';
 import 'jogo/progresso.dart';
 import 'telas/controles_toque.dart';
+import 'telas/creditos.dart';
 import 'telas/entrar_jogadores.dart';
 import 'telas/escolha_fase.dart';
 import 'telas/escolha_modo.dart';
@@ -110,6 +111,11 @@ class _AventuraAppState extends State<AventuraApp> {
                   ControlesToque(jogo: jogo),
               AventuraJogo.overlayVitoria: (_, jogo) => TelaVitoria(jogo: jogo),
               AventuraJogo.overlayDerrota: (_, jogo) => TelaDerrota(jogo: jogo),
+              AventuraJogo.overlayCreditos: (_, jogo) => TelaCreditos(
+                jogadores: jogo.jogadores,
+                aoJogarDesdeInicio: () => jogo.comecar(0),
+                aoEscolherHeroi: jogo.voltarParaEscolha,
+              ),
             },
           ),
         ),

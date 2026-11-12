@@ -506,7 +506,7 @@ class Chefe extends PositionComponent
     _visual.paint.colorFilter = null;
     _aura.paint.color = const Color(0x00000000);
     _limparArena();
-    Sons.tocar('pisao', volume: 0.8);
+    Sons.tocar('chefe_derrotado', volume: 0.8);
     _soltarFaiscas(40);
     _visual.add(RotateEffect.by(pi * 4, EffectController(duration: 1.2)));
     _visual.add(OpacityEffect.fadeOut(EffectController(duration: 1.2)));

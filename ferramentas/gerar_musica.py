@@ -5,6 +5,7 @@ Músicas originais em estilo 8-bit: melodia em onda quadrada, baixo em onda tria
 bateria de ruído, com 16 compassos que repetem sem emenda.
   musica_fase1.wav  Dó maior, 150 BPM, alegre
   musica_chefe.wav  Lá menor, 168 BPM, para a luta contra o chefão
+  musica_creditos.wav  reprise da fase 1, 110 BPM, mais calma, para os créditos
 
 Notação das partes: cada compasso tem 8 colcheias separadas por espaço.
   C5, F#4, Bb3  nota (nome + oitava)
@@ -189,6 +190,7 @@ def compor(nome, melodia, acordes, bpm, padrao_do_baixo, bumbos):
 def main():
     compor("musica_fase1.wav", MELODIA, ACORDES, 150, "{t} . {q} . {t} . {q} {t}", (0, 4))
     compor("musica_chefe.wav", MELODIA_CHEFE, ACORDES_CHEFE, 168, "{t} {t} {q} {t} {t} {t} {q} {t}", (0, 3, 4, 6))
+    compor("musica_creditos.wav", MELODIA, ACORDES, 110, "{t} . . . {q} . . .", (0,))
 
 
 if __name__ == "__main__":
