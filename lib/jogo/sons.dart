@@ -18,6 +18,7 @@ class Sons {
     'fogo.wav': 3,
     'terra.wav': 3,
     'bolha.wav': 3,
+    'carga.wav': 2,
     'acerto.ogg': 3,
   };
   static String? _musica;

@@ -22,7 +22,12 @@ abstract class Poder extends PositionComponent
 
   Fase get fase => game.fase!;
 
-  int acertarInimigos(Rect area, Golpe golpe, {bool atravessa = true}) {
+  int acertarInimigos(
+    Rect area,
+    Golpe golpe, {
+    bool atravessa = true,
+    int forca = 1,
+  }) {
     var acertos = 0;
     for (final inimigo in fase.alvos) {
       if (!inimigo.vivo || _atingidos.contains(inimigo)) {
@@ -30,7 +35,7 @@ abstract class Poder extends PositionComponent
       }
       if (inimigo.toRect().overlaps(area)) {
         _atingidos.add(inimigo);
-        inimigo.receberGolpe(golpe, deX: area.center.dx);
+        inimigo.receberGolpe(golpe, deX: area.center.dx, forca: forca);
         acertos++;
         if (!atravessa) {
           break;
@@ -112,21 +117,158 @@ class Espadada extends Poder {
   }
 }
 
-class Raio extends Poder {
-  Raio({required Vector2 origem, required this.direcao})
-    : super(position: origem, size: Vector2(16, 6), anchor: Anchor.center);
+/// Golpe carregado do Guerreiro: a espada é arremessada em linha reta,
+/// com a ponta para a frente. Atravessa inimigos (com a força da carga),
+/// quebra rachadas e para na parede.
+class EspadaArremessada extends Poder {
+  EspadaArremessada({
+    required Vector2 origem,
+    required this.direcao,
+    required this.escala,
+    required this.forca,
+  }) : super(
+         position: origem,
+         size: Vector2(tamanhoDaEspada(escala).y, tamanhoDaEspada(escala).x),
+         anchor: Anchor.center,
+       );
 
   final double direcao;
+  final double escala;
+  final int forca;
+  double _percorrido = 0;
+  static const _velocidade = 340.0;
+  late final double alcance = alcanceDoArremesso(escala);
+
+  @override
+  Future<void> onLoad() async {
+    Sons.tocar('espada', volume: 0.7);
+    final tamanho = tamanhoDaEspada(escala);
+    add(
+      SpriteComponent(
+        sprite: Sprite(game.images.fromCache('poderes/espada.png')),
+        size: tamanho,
+        anchor: Anchor.center,
+        position: size / 2,
+        // O sprite aponta para cima; gira para a ponta ir à frente.
+        angle: direcao * pi / 2,
+      ),
+    );
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    final passo = _velocidade * dt;
+    position.x += direcao * passo;
+    _percorrido += passo;
+    acertarInimigos(toRect(), Golpe.espada, forca: forca);
+    // A ponta inteira (toda a altura da espada) quebra rachadas.
+    final ponta = position.x + direcao * size.x / 2;
+    final areaDaPonta = Rect.fromLTRB(
+      min(ponta, ponta - direcao * 4),
+      position.y - size.y / 2,
+      max(ponta, ponta - direcao * 4),
+      position.y + size.y / 2,
+    );
+    fase.golpearArea(areaDaPonta, Golpe.espada);
+    final bateu = [
+      areaDaPonta.top + 1,
+      position.y,
+      areaDaPonta.bottom - 1,
+    ].any((y) => bateuEmBloco(ponta, y));
+    if (_percorrido > alcance || bateu) {
+      soltarFaiscas(Vector2(ponta, position.y), const Color(0xFFB8C4D6));
+      removeFromParent();
+    }
+  }
+}
+
+/// Distância do arremesso: cresce com a carga (160 px por 1× de escala).
+double alcanceDoArremesso(double escala) => 160 * escala;
+
+/// A espada carregada cresce mais no comprimento do que na largura.
+Vector2 tamanhoDaEspada(double escala) =>
+    Vector2(18 * (1 + 0.2 * (escala - 1)), 18 * (1 + 1.2 * (escala - 1)));
+
+/// O que aparece na mão do herói enquanto ele carrega: a espada erguida
+/// (Guerreiro) ou uma bola de energia (Raio), crescendo com a carga.
+class PreviaDaCarga extends PositionComponent
+    with HasGameReference<AventuraJogo> {
+  PreviaDaCarga({required this.golpe});
+
+  final Golpe golpe;
+  double escala = 1;
+  double direcao = 1;
+  double _tempo = 0;
+  SpriteComponent? _espada;
+  final Paint _aura = Paint()..color = const Color(0x66FFE066);
+  final Paint _nucleo = Paint()..color = const Color(0xFFFFFFFF);
+  final Paint _faisca = Paint()
+    ..color = const Color(0xFFFFE066)
+    ..strokeWidth = 1;
+
+  @override
+  Future<void> onLoad() async {
+    if (golpe == Golpe.espada) {
+      _espada = SpriteComponent(
+        sprite: Sprite(game.images.fromCache('poderes/espada.png')),
+        anchor: const Anchor(0.5, 0.9),
+      );
+      add(_espada!);
+    }
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _tempo += dt;
+    final espada = _espada;
+    if (espada != null) {
+      espada.size = tamanhoDaEspada(escala);
+      // Erguida acima da cabeça, tremendo de leve quando está cheia.
+      final tremor = escala >= 2.5 ? 0.05 * sin(_tempo * 40) : 0.0;
+      espada.angle = direcao * (-1.7 + tremor);
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    if (golpe != Golpe.raio) {
+      return;
+    }
+    final raio = 2.5 * escala;
+    canvas.drawCircle(Offset.zero, raio * 1.8, _aura);
+    canvas.drawCircle(Offset.zero, raio, _nucleo);
+    for (var i = 0; i < 3 + escala.floor(); i++) {
+      final angulo = _aleatorio.nextDouble() * pi * 2;
+      final ponta = Offset(cos(angulo), sin(angulo)) * raio * 2.2;
+      canvas.drawLine(Offset.zero, ponta, _faisca);
+    }
+  }
+}
+
+class Raio extends Poder {
+  /// [escala] > 1 é o raio carregado: mais grosso e vai mais longe
+  /// (continua atravessando os inimigos).
+  Raio({required Vector2 origem, required this.direcao, this.escala = 1})
+    : super(
+        position: origem,
+        size: Vector2(16 * escala, 6 * escala),
+        anchor: Anchor.center,
+      );
+
+  final double direcao;
+  final double escala;
   double _percorrido = 0;
   static const _velocidade = 380.0;
-  static const _alcance = 190.0;
-  final Paint _brilho = Paint()
+  late final double _alcance = 190.0 * escala;
+  late final Paint _brilho = Paint()
     ..color = const Color(0x88FFE066)
-    ..strokeWidth = 4
+    ..strokeWidth = 4 * escala
     ..strokeCap = StrokeCap.round;
-  final Paint _nucleo = Paint()
+  late final Paint _nucleo = Paint()
     ..color = const Color(0xFFFFFFFF)
-    ..strokeWidth = 1.5;
+    ..strokeWidth = 1.5 * escala;
 
   @override
   void update(double dt) {
@@ -150,7 +292,7 @@ class Raio extends Poder {
       final x = i * size.x / 5;
       final y =
           size.y / 2 +
-          (i.isEven ? -2.0 : 2.0) * (_aleatorio.nextDouble() + 0.5);
+          (i.isEven ? -2.0 : 2.0) * escala * (_aleatorio.nextDouble() + 0.5);
       pontos.add(Offset(x, y));
     }
     for (var i = 0; i < pontos.length - 1; i++) {

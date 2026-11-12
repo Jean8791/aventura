@@ -316,6 +316,48 @@ def bolha_c():
             for i in range(n)]
 
 
+# ---------- carga do poder (som contínuo subindo enquanto segura, ~1,3 s) ----------
+
+def carga_a():
+    """Energia subindo: quadrada fina com vibrato que acelera e chiado que abre."""
+    rng = random.Random(61)
+    n, osc, filtro = amostras(1.3), Oscilador(), PassaBaixa()
+    saida = []
+    for i in range(n):
+        p = i / n
+        vibrato = 1 + 0.03 * math.sin(2 * math.pi * (6 + 20 * p) * i / TAXA)
+        tom = 0.35 * osc.quadrada(varredura(330, 1320, i, n) * vibrato, 0.25)
+        chiado = 0.5 * filtro(ruido(rng), 500 + 3500 * p)
+        volume = 0.35 + 0.65 * p
+        saida.append((tom + chiado) * volume * min(1.0, (n - i) / amostras(0.05)))
+    return saida
+
+
+def carga_b():
+    """Brilho mágico: notas rápidas subindo (arpejo) cada vez mais agudas."""
+    escala = [523, 659, 784, 1047, 1319, 1568, 2093, 2637]
+    saida = []
+    for k, f in enumerate(escala):
+        n, osc, eco = amostras(0.16), Oscilador(), Oscilador()
+        volume = 0.4 + 0.08 * k
+        saida += [volume * (0.7 * osc.triangular(f) + 0.3 * eco.seno(f * 2)) * envelope(i, n, ataque=0.003, curva=1.2)
+                  for i in range(n)]
+    return saida
+
+
+def carga_c():
+    """Vuuuum: tom cheio subindo liso, com tremolo que acelera."""
+    n, a, b = amostras(1.3), Oscilador(), Oscilador()
+    saida = []
+    for i in range(n):
+        p = i / n
+        f = varredura(400, 1600, i, n)
+        tremolo = 0.7 + 0.3 * math.sin(2 * math.pi * (4 + 16 * p) * i / TAXA)
+        valor = 0.5 * a.triangular(f) + 0.25 * b.quadrada(f * 1.5, 0.5)
+        saida.append(valor * tremolo * (0.4 + 0.6 * p) * min(1.0, (n - i) / amostras(0.05)))
+    return saida
+
+
 SONS = {
     "pulo": (pulo_a, pulo_b),
     "dano": (dano_a, dano_b),
@@ -324,6 +366,7 @@ SONS = {
     "fogo": (fogo_a, fogo_b, fogo_c),
     "terra": (terra_a, terra_b),
     "bolha": (bolha_a, bolha_b, bolha_c),
+    "carga": (carga_a, carga_b, carga_c),
 }
 
 # Versão escolhida pelo Jean de ouvido (2026-11-12).
@@ -335,6 +378,7 @@ ESCOLHIDOS = {
     "fogo": "c",  # a "b" tinha ataque fraco e parecia atrasada com a música por cima
     "terra": "b",
     "bolha": "c",  # a "a" (seno grave) atrasava e sumia no alto-falante do celular
+    "carga": "c",
 }
 
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 enum Golpe { espada, raio, fogo, terra, agua, pisao }
 
+/// Poderes que já têm versão carregada (segurar o ataque).
+const golpesCarregaveis = {Golpe.espada, Golpe.raio};
+
 class ClasseDeHeroi {
   const ClasseDeHeroi({
     required this.nome,

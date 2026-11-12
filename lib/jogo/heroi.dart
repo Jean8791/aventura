@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'aventura_jogo.dart';
+import 'carga.dart';
 import 'classes.dart';
 import 'controle.dart';
 import 'fase.dart';
@@ -89,6 +90,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   }
 
   void desmaiar(double segundos, {required Vector2 perto}) {
+    _pararDeCarregar();
     _desmaio = segundos;
     _congelado = false;
     position.setFrom(perto);
@@ -164,6 +166,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       _recarga = classe.recarga;
       _usarPoder();
     }
+    _carregar(dt);
 
     final plataformaAnterior = _plataforma;
     if (plataformaAnterior != null) {
@@ -246,14 +249,99 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     }
   }
 
-  void _usarPoder() {
+  /// Segurar o ataque carrega (o herói brilha e faz um tique por nível);
+  /// soltar dispara a versão maior do poder.
+  void _carregar(double dt) {
+    if (!golpesCarregaveis.contains(classe.poder)) {
+      return;
+    }
+    final carga = controle.carga;
+    final disparo = carga.atualizar(dt, segurando: controle.seguraAtaque);
+    _brilho += dt;
+    _brilhar(carga.nivel);
+    _mostrarPrevia(carga.segundos);
+    if (disparo != null) {
+      _recarga = classe.recarga;
+      _usarPoder(
+        escala: Carga.escalaDo(disparo),
+        forca: Carga.forcaDo(disparo),
+      );
+    }
+  }
+
+  double _brilho = 0;
+  PreviaDaCarga? _previa;
+
+  /// A partir de 0,15 s segurando, o poder aparece na mão e vai crescendo
+  /// (antes disso é toque rápido e não pisca nada).
+  void _mostrarPrevia(double segundos) {
+    if (segundos < 0.15) {
+      _esconderPrevia();
+      return;
+    }
+    final previa = _previa ??= PreviaDaCarga(golpe: classe.poder);
+    if (!previa.isMounted && previa.parent == null) {
+      add(previa);
+      Sons.tocar('carga', volume: 0.5);
+    }
+    previa
+      ..escala = Carga.escalaContinua(segundos)
+      ..direcao = direcao
+      ..position = classe.poder == Golpe.espada
+          ? Vector2(size.x / 2 + direcao * 3, size.y * 0.35)
+          : Vector2(size.x / 2 + direcao * 8, size.y * 0.45);
+  }
+
+  /// Queda no buraco, desmaio ou fim de fase: a carga some sem disparar
+  /// (senão o golpe sairia sozinho ao reaparecer).
+  void _pararDeCarregar() {
+    controle.carga.cancelar();
+    _brilho = 0;
+    _visual.paint.colorFilter = null;
+    _esconderPrevia();
+  }
+
+  void _esconderPrevia() {
+    final previa = _previa;
+    if (previa == null) {
+      return;
+    }
+    previa.removeFromParent();
+    _previa = null;
+    Sons.pararEfeito('carga');
+  }
+
+  void _brilhar(int nivel) {
+    if (nivel == 0) {
+      _brilho = 0;
+      _visual.paint.colorFilter = null;
+      return;
+    }
+    final pulso = 0.5 + 0.5 * sin(_brilho * (8 + 4 * nivel));
+    final forca = (0.15 + 0.15 * nivel + 0.12 * pulso).clamp(0.0, 0.75);
+    _visual.paint.colorFilter = ColorFilter.mode(
+      Color.lerp(Colors.white, classe.cor, 0.4)!.withValues(alpha: forca),
+      BlendMode.srcATop,
+    );
+  }
+
+  void _usarPoder({double escala = 1, int forca = 1}) {
     final frente = Vector2(center.x + direcao * 8, position.y + 7);
     switch (classe.poder) {
       case Golpe.espada:
-        _fase.add(Espadada(heroi: this));
+        _fase.add(
+          escala > 1
+              ? EspadaArremessada(
+                  origem: frente,
+                  direcao: direcao,
+                  escala: escala,
+                  forca: forca,
+                )
+              : Espadada(heroi: this),
+        );
       case Golpe.raio:
-        Sons.tocar('raio', volume: 0.4);
-        _fase.add(Raio(origem: frente, direcao: direcao));
+        Sons.tocar('raio', volume: escala > 1 ? 0.6 : 0.4);
+        _fase.add(Raio(origem: frente, direcao: direcao, escala: escala));
       case Golpe.fogo:
         _fase.add(BolaDeFogo(origem: frente, direcao: direcao));
       case Golpe.agua:
@@ -296,6 +384,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     Sons.tocar('dano', volume: 0.5);
     _congelado = true;
     velocidade.setZero();
+    _pararDeCarregar();
     game.perderCoracao(this, caiu: true);
   }
 
@@ -314,6 +403,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     _visual
       ..scale.y = 1
       ..position.y = altura + 1;
+    _pararDeCarregar();
   }
 }
 

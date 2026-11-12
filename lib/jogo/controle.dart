@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 
+import 'carga.dart';
 import 'entrada_de_controles.dart';
 
 class Controle {
@@ -11,6 +12,10 @@ class Controle {
   bool toqueEsquerda = false;
   bool toqueDireita = false;
   bool _toquePulo = false;
+  bool _toqueAtaque = false;
+
+  /// Carga do poder deste jogador (cada controle tem a sua).
+  final Carga carga = Carga();
 
   bool _pediuPulo = false;
   bool _pediuAtaque = false;
@@ -55,6 +60,8 @@ class Controle {
       _teclaDireita || toqueDireita || _nativoDireita || _eixoX > 0.5;
   bool get seguraPulo =>
       _teclaPulo || _toquePulo || _nativoPulo || _eixoY < -0.5;
+  bool get seguraAtaque =>
+      _teclaAtaque || _toqueAtaque || _nativoAtaque || _eixoY > 0.5;
 
   bool consumirPedidoDePulo() {
     final pediu = _pediuPulo;
@@ -104,6 +111,7 @@ class Controle {
     if (apertado) {
       _pediuAtaque = true;
     }
+    _toqueAtaque = apertado;
   }
 
   void receberNativo(EventoDeControle evento) {
@@ -154,6 +162,8 @@ class Controle {
     toqueEsquerda = false;
     toqueDireita = false;
     _toquePulo = false;
+    _toqueAtaque = false;
     _pediuPulo = false;
+    carga.cancelar();
   }
 }

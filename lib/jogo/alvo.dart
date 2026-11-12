@@ -7,5 +7,6 @@ abstract interface class Alvo {
 
   Rect toRect();
 
-  void receberGolpe(Golpe golpe, {double? deX});
+  /// [forca] > 1 é golpe carregado: o dano é multiplicado.
+  void receberGolpe(Golpe golpe, {double? deX, int forca = 1});
 }

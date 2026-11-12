@@ -173,7 +173,7 @@ class Inimigo extends PositionComponent
   }
 
   @override
-  void receberGolpe(Golpe golpe, {double? deX}) {
+  void receberGolpe(Golpe golpe, {double? deX, int forca = 1}) {
     if (!vivo) {
       return;
     }
@@ -185,7 +185,7 @@ class Inimigo extends PositionComponent
       }
       return;
     }
-    final dano = tipo.danoDe(golpe);
+    final dano = tipo.danoDe(golpe) * forca;
     if (dano == 0) {
       _mostrarImune();
       return;

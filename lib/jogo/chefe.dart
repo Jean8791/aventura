@@ -118,6 +118,8 @@ class Chefe extends PositionComponent
   static const nome = 'Feiticeiro das Sombras';
   static const _tempoDeTransformacao = 2.6;
 
+  static const forcaMaximaNoChefe = 2;
+
   static const _danoPorGolpe = {
     Golpe.espada: 2,
     Golpe.raio: 1,
@@ -387,14 +389,17 @@ class Chefe extends PositionComponent
   }
 
   @override
-  void receberGolpe(Golpe golpe, {double? deX}) {
+  void receberGolpe(Golpe golpe, {double? deX, int forca = 1}) {
     if (!vivo ||
         estado == EstadoDoChefe.entrando ||
         estado == EstadoDoChefe.transformando ||
         _invencivel > 0) {
       return;
     }
-    final dano = _danoPorGolpe[golpe] ?? 1;
+    // Golpe carregado vale no máximo o dobro no chefe, para a luta não
+    // acabar em duas ou três cargas.
+    final dano =
+        (_danoPorGolpe[golpe] ?? 1) * min<int>(forca, forcaMaximaNoChefe);
     vida = max(0, vida - (estado == EstadoDoChefe.tonto ? dano * 2 : dano));
     _invencivel = 0.35;
     _publicarVida();
@@ -570,7 +575,7 @@ class Orbe extends PositionComponent
   }
 
   @override
-  void receberGolpe(Golpe golpe, {double? deX}) => estourar();
+  void receberGolpe(Golpe golpe, {double? deX, int forca = 1}) => estourar();
 
   void estourar() {
     if (_estourado) {
