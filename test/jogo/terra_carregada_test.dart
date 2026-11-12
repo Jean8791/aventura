@@ -165,4 +165,93 @@ void main() {
     expect(broca.isRemoving, isFalse);
     expect(broca.position.x, greaterThan(inicio + 20));
   });
+  testWidgets('carga com pedra anterior consome apenas a pedra nova', (
+    tester,
+  ) async {
+    await preparar(tester);
+    final fase = jogo.fase!;
+    final heroi = fase.heroi..position = Vector2(180, 80);
+    fase.criarPedraNaFrente(heroi);
+    await tester.runAsync(jogo.ready);
+    final anterior = fase.children.whereType<PedraMagica>().single;
+    heroi.controle.toqueAtaque(true);
+    heroi.update(0);
+    await tester.runAsync(jogo.ready);
+    expect(fase.children.whereType<PedraMagica>(), hasLength(2));
+    heroi.controle.carga.atualizar(1.2, segurando: true);
+    heroi.controle.toqueAtaque(false);
+    heroi.update(0);
+    await tester.runAsync(jogo.ready);
+    expect(fase.children.whereType<PedraMagica>().single, same(anterior));
+    expect(fase.children.whereType<BrocaDeTerra>(), hasLength(1));
+  });
+
+  group('bloco de terra no ar', () {
+    (int, int) chaoLivre(Fase fase) {
+      for (var coluna = 6; coluna < fase.colunas - 2; coluna++) {
+        for (var linha = 4; linha < fase.linhas; linha++) {
+          final livreAcima = List.generate(
+            4,
+            (i) => !fase.solido(coluna, linha - 1 - i),
+          ).every((livre) => livre);
+          if (fase.solido(coluna, linha) && livreAcima) {
+            return (coluna, linha);
+          }
+        }
+      }
+      throw StateError('sem chão livre na fase de teste');
+    }
+
+    testWidgets('no ar, o bloco aparece embaixo dos pés', (tester) async {
+      await preparar(tester);
+      final fase = jogo.fase!;
+      final (coluna, chao) = chaoLivre(fase);
+      final heroi = fase.heroi
+        ..noChao = false
+        ..position = Vector2(
+          coluna * tamanhoBloco + 3,
+          (chao - 3) * tamanhoBloco - 16 - 4,
+        );
+      final pedra = fase.criarPedraNaFrente(heroi)!;
+      expect(pedra.coluna, coluna);
+      expect(
+        pedra.linha * tamanhoBloco,
+        greaterThanOrEqualTo(heroi.toRect().bottom),
+      );
+      expect(pedra.linha, lessThan(chao));
+    });
+
+    testWidgets('no chão, o bloco continua aparecendo na frente', (
+      tester,
+    ) async {
+      await preparar(tester);
+      final fase = jogo.fase!;
+      final (coluna, chao) = chaoLivre(fase);
+      final heroi = fase.heroi
+        ..noChao = true
+        ..direcao = 1
+        ..position = Vector2(
+          coluna * tamanhoBloco + 3,
+          chao * tamanhoBloco - 16,
+        );
+      final pedra = fase.criarPedraNaFrente(heroi)!;
+      expect(pedra.coluna, greaterThan(coluna));
+      expect(pedra.linha, chao - 1);
+    });
+
+    testWidgets('no ar logo acima do chão, cria na frente', (tester) async {
+      await preparar(tester);
+      final fase = jogo.fase!;
+      final (coluna, chao) = chaoLivre(fase);
+      final heroi = fase.heroi
+        ..noChao = false
+        ..direcao = 1
+        ..position = Vector2(
+          coluna * tamanhoBloco + 3,
+          chao * tamanhoBloco - 16 - 1,
+        );
+      final pedra = fase.criarPedraNaFrente(heroi)!;
+      expect(pedra.coluna, greaterThan(coluna));
+    });
+  });
 }

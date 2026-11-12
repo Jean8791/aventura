@@ -440,45 +440,57 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       .reduce((a, b) => a < b ? a : b);
 
   PedraMagica? criarPedraNaFrente(Heroi heroi) {
+    // No ar, o bloco aparece logo abaixo dos pés (dá para subir nele).
+    if (!heroi.noChao) {
+      final coluna = (heroi.center.x / tamanhoBloco).floor();
+      final linha = ((heroi.position.y + heroi.size.y) / tamanhoBloco).ceil();
+      if (linha < linhas && !solido(coluna, linha)) {
+        return _colocarPedra(heroi, coluna, linha);
+      }
+    }
     final coluna = heroi.direcao > 0
         ? ((heroi.position.x + heroi.size.x) / tamanhoBloco).ceil()
         : (heroi.position.x / tamanhoBloco).floor() - 1;
     final linhaDosPes = ((heroi.position.y + heroi.size.y - 1) / tamanhoBloco)
         .floor();
     for (final linha in [linhaDosPes, linhaDosPes - 1]) {
-      if (solido(coluna, linha)) {
-        continue;
+      if (!solido(coluna, linha)) {
+        return _colocarPedra(heroi, coluna, linha);
       }
-      final area = Rect.fromLTWH(
-        coluna * tamanhoBloco,
-        linha * tamanhoBloco,
-        tamanhoBloco,
-        tamanhoBloco,
-      );
-      if (area.overlaps(heroi.toRect())) {
-        return null;
-      }
-      var acertou = false;
-      for (final inimigo in alvos) {
-        if (inimigo.vivo && inimigo.toRect().overlaps(area)) {
-          inimigo.receberGolpe(Golpe.terra, deX: heroi.center.x);
-          acertou = true;
-        }
-      }
-      if (acertou) {
-        Sons.tocar('terra', volume: 0.5);
-        return null;
-      }
-      if (_pedrasAtivas.length >= _maximoDePedras) {
-        removerPedra(_pedrasAtivas.first);
-      }
-      final pedra = PedraMagica(coluna: coluna, linha: linha);
-      _pedras.add((coluna, linha));
-      _pedrasAtivas.add(pedra);
-      add(pedra);
-      return pedra;
     }
     return null;
+  }
+
+  /// Põe a pedra na célula; se tiver inimigo ali, acerta ele em vez disso.
+  PedraMagica? _colocarPedra(Heroi heroi, int coluna, int linha) {
+    final area = Rect.fromLTWH(
+      coluna * tamanhoBloco,
+      linha * tamanhoBloco,
+      tamanhoBloco,
+      tamanhoBloco,
+    );
+    if (area.overlaps(heroi.toRect())) {
+      return null;
+    }
+    var acertou = false;
+    for (final inimigo in alvos) {
+      if (inimigo.vivo && inimigo.toRect().overlaps(area)) {
+        inimigo.receberGolpe(Golpe.terra, deX: heroi.center.x);
+        acertou = true;
+      }
+    }
+    if (acertou) {
+      Sons.tocar('terra', volume: 0.5);
+      return null;
+    }
+    if (_pedrasAtivas.length >= _maximoDePedras) {
+      removerPedra(_pedrasAtivas.first);
+    }
+    final pedra = PedraMagica(coluna: coluna, linha: linha);
+    _pedras.add((coluna, linha));
+    _pedrasAtivas.add(pedra);
+    add(pedra);
+    return pedra;
   }
 
   bool golpearCelula(int coluna, int linha, Golpe golpe) {
