@@ -4,6 +4,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 
 import 'aventura_jogo.dart';
+import 'bolha_presa.dart';
 import 'carga.dart';
 import 'classes.dart';
 import 'controle.dart';
@@ -45,6 +46,13 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   final Vector2 velocidade = Vector2.zero();
   double direcao = 1;
   double _recarga = 0;
+  PedraMagica? _pedraDoAperto;
+
+  PedraMagica? get _pedraParaBroca {
+    final pedra = _pedraDoAperto;
+    return pedra != null && pedra.isMounted && !pedra.isRemoving ? pedra : null;
+  }
+
   double _passos = 0;
 
   bool noChao = false;
@@ -53,6 +61,11 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
   double _invencivel = 0;
   bool _congelado = false;
   bool _puloCortavel = false;
+  Aprisionamento? _naBolha;
+  CircleComponent? _bolhaVisual;
+
+  /// Preso na bolha do colega: flutua sem controle e não leva dano.
+  bool get naBolha => _naBolha != null;
 
   late final SpriteComponent _visual;
 
@@ -118,6 +131,22 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       return;
     }
 
+    final bolha = _naBolha;
+    if (bolha != null) {
+      controle.consumirPedidoDeAtaque();
+      controle.consumirPedidoDePulo();
+      final coluna = (center.x / tamanhoBloco).floor();
+      final linhaAcima = ((position.y - 6) / tamanhoBloco).floor();
+      position.y -= bolha.atualizar(
+        dt,
+        tetoAcima: _fase.solido(coluna, linhaAcima),
+      );
+      if (bolha.estourou) {
+        estourarBolha();
+      }
+      return;
+    }
+
     var direcao = 0.0;
     if (controle.esquerda) direcao -= 1;
     if (controle.direita) direcao += 1;
@@ -164,6 +193,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     _recarga = max(0, _recarga - dt);
     if (controle.consumirPedidoDeAtaque() && _recarga == 0) {
       _recarga = classe.recarga;
+      _pedraDoAperto = null;
       _usarPoder();
     }
     _carregar(dt);
@@ -176,10 +206,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     velocidade.y = min(velocidade.y + _gravidade * dt, _quedaMaxima);
     final resultado = _fase.mover(position, size, velocidade, dt);
     _plataforma = resultado.noChao ? null : _pousarEmPlataforma(pesAntes);
-    noChao =
-        resultado.noChao ||
-        _plataforma != null ||
-        _pousarEmInimigoPreso(pesAntes);
+    noChao = resultado.noChao || _plataforma != null;
 
     if (_invencivel > 0) {
       _invencivel = max(0, _invencivel - dt);
@@ -208,28 +235,6 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       }
     }
     return null;
-  }
-
-  bool _pousarEmInimigoPreso(double pesAntes) {
-    if (velocidade.y < 0) {
-      return false;
-    }
-    for (final inimigo in _fase.inimigos) {
-      if (!inimigo.vivo || !inimigo.preso) {
-        continue;
-      }
-      final bolha = inimigo.areaDaBolha;
-      final topo = bolha.top + 2;
-      final pes = position.y + size.y;
-      final sobreposicaoX =
-          position.x + size.x > bolha.left + 2 && position.x < bolha.right - 2;
-      if (sobreposicaoX && pesAntes <= topo + 4 && pes >= topo - 1) {
-        position.y = topo - size.y;
-        velocidade.y = 0;
-        return true;
-      }
-    }
-    return false;
   }
 
   void _animar(double dt) {
@@ -267,6 +272,9 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
         forca: Carga.forcaDo(disparo),
       );
     }
+    if (!controle.seguraAtaque) {
+      _pedraDoAperto = null;
+    }
   }
 
   double _brilho = 0;
@@ -284,18 +292,22 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
       add(previa);
       Sons.tocar('carga', volume: 0.5);
     }
+    final pedra = _pedraParaBroca;
     previa
       ..escala = Carga.escalaContinua(segundos)
       ..direcao = direcao
-      ..position = classe.poder == Golpe.espada
+      ..position = pedra != null
+          ? pedra.center - position - Vector2(direcao * 4.5, 0)
+          : classe.poder == Golpe.espada
           ? Vector2(size.x / 2 + direcao * 3, size.y * 0.35)
-          : Vector2(size.x / 2 + direcao * 8, size.y * 0.45);
+          : Vector2(size.x / 2 + direcao * 9, size.y * 0.45);
   }
 
   /// Queda no buraco, desmaio ou fim de fase: a carga some sem disparar
   /// (senão o golpe sairia sozinho ao reaparecer).
   void _pararDeCarregar() {
     controle.carga.cancelar();
+    _pedraDoAperto = null;
     _brilho = 0;
     _visual.paint.colorFilter = null;
     _esconderPrevia();
@@ -329,7 +341,7 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     final frente = Vector2(center.x + direcao * 8, position.y + 7);
     switch (classe.poder) {
       case Golpe.espada:
-        _fase.add(
+        _lancar(
           escala > 1
               ? EspadaArremessada(
                   origem: frente,
@@ -341,17 +353,37 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
         );
       case Golpe.raio:
         Sons.tocar('raio', volume: escala > 1 ? 0.6 : 0.4);
-        _fase.add(Raio(origem: frente, direcao: direcao, escala: escala));
+        _lancar(Raio(origem: frente, direcao: direcao, escala: escala));
       case Golpe.fogo:
-        _fase.add(BolaDeFogo(origem: frente, direcao: direcao));
+        _lancar(BolaDeFogo(origem: frente, direcao: direcao, escala: escala));
       case Golpe.agua:
-        _fase.add(Bolha(origem: frente, direcao: direcao));
+        _lancar(Bolha(origem: frente, direcao: direcao, escala: escala));
       case Golpe.terra:
-        _fase.criarPedraNaFrente(this);
+        if (escala > 1) {
+          final pedra = _pedraParaBroca;
+          final origem = pedra?.center ?? frente;
+          if (pedra != null) {
+            _fase.removerPedra(pedra);
+          }
+          _pedraDoAperto = null;
+          _lancar(
+            BrocaDeTerra(
+              origem: origem,
+              direcao: direcao,
+              escala: escala,
+              forca: forca,
+            ),
+          );
+        } else {
+          _pedraDoAperto = _fase.criarPedraNaFrente(this);
+        }
       case Golpe.pisao:
         break;
     }
   }
+
+  /// Todo poder lançado leva o número do jogador (para a regra de anular).
+  void _lancar(Poder poder) => _fase.add(poder..dono = jogador);
 
   void quicarNoInimigo() {
     velocidade.y = controle.seguraPulo ? -_velocidadeDoPulo : -260;
@@ -365,8 +397,49 @@ class Heroi extends PositionComponent with HasGameReference<AventuraJogo> {
     Sons.tocar('mola', volume: 0.5);
   }
 
+  /// A bolha da Maga da Água do colega pegou este herói (só brincadeira:
+  /// flutua ~2 s e cai, sem perder coração).
+  void prenderNaBolha() {
+    if (!ativo || naBolha) {
+      return;
+    }
+    _naBolha = Aprisionamento(duracao: 2);
+    velocidade.setZero();
+    _pararDeCarregar();
+    Sons.tocar('bolha', volume: 0.6);
+    final raio = max(size.x, size.y) * 0.8;
+    _bolhaVisual = CircleComponent(
+      radius: raio,
+      anchor: Anchor.center,
+      position: size / 2,
+      paint: Paint()..color = const Color(0x6E78C8FF),
+      children: [
+        CircleComponent(
+          radius: raio,
+          paint: Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = 1.2
+            ..color = const Color(0xCCFFFFFF),
+        ),
+      ],
+    );
+    add(_bolhaVisual!);
+  }
+
+  /// Estoura a bolha (acabou o tempo ou o colega encostou): cai normal.
+  void estourarBolha() {
+    if (!naBolha) {
+      return;
+    }
+    _naBolha = null;
+    _bolhaVisual?.removeFromParent();
+    _bolhaVisual = null;
+    velocidade.setZero();
+    Sons.tocar('bolha', volume: 0.5);
+  }
+
   void levarDano({required double origemX}) {
-    if (_invencivel > 0 || !ativo) {
+    if (_invencivel > 0 || !ativo || naBolha) {
       return;
     }
     _invencivel = _tempoInvencivel;

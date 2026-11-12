@@ -23,7 +23,9 @@ enum TipoDeObstaculo {
 
   bool quebraCom(Golpe golpe) => switch (this) {
     gelo => golpe == Golpe.fogo,
-    rachada => golpe == Golpe.espada || golpe == Golpe.raio,
+    // Terra: só a broca carregada golpeia blocos (o bloco normal não).
+    rachada =>
+      golpe == Golpe.espada || golpe == Golpe.raio || golpe == Golpe.terra,
   };
 }
 

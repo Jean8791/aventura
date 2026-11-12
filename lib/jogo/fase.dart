@@ -6,6 +6,7 @@ import 'package:flame_tiled/flame_tiled.dart';
 
 import 'alvo.dart';
 import 'aventura_jogo.dart';
+import 'bolha_presa.dart';
 import 'classes.dart';
 import 'chefe.dart';
 import 'heroi.dart';
@@ -295,7 +296,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       return;
     }
     for (final heroi in herois) {
-      if (!heroi.ativo) {
+      if (!heroi.ativo || heroi.naBolha) {
         continue;
       }
       if (_interagir(heroi, dt)) {
@@ -323,9 +324,28 @@ class Fase extends World with HasGameReference<AventuraJogo> {
     }
 
     for (final inimigo in inimigos) {
-      if (!inimigo.vivo ||
-          inimigo.preso ||
-          !inimigo.toRect().deflate(2).overlaps(corpo)) {
+      if (!inimigo.vivo) {
+        continue;
+      }
+      if (inimigo.preso) {
+        // Pular em cima estoura com dano e quica; encostar só estoura (dano).
+        switch (toqueNaBolha(
+          corpo: corpo,
+          bolha: inimigo.areaDaBolha,
+          velocidadeY: heroi.velocidade.y,
+          dt: dt,
+        )) {
+          case ToqueNaBolha.pisou:
+            inimigo.estourarBolha();
+            heroi.quicarNoInimigo();
+          case ToqueNaBolha.encostou:
+            inimigo.estourarBolha();
+          case ToqueNaBolha.nada:
+            break;
+        }
+        continue;
+      }
+      if (!inimigo.toRect().deflate(2).overlaps(corpo)) {
         continue;
       }
       final pesAntes = corpo.bottom - heroi.velocidade.y * dt;
@@ -335,6 +355,14 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       } else {
         inimigo.virarDeCostasPara(heroi.center.x);
         heroi.levarDano(origemX: inimigo.center.x);
+      }
+    }
+
+    for (final colega in herois) {
+      if (colega != heroi &&
+          colega.naBolha &&
+          colega.toRect().overlaps(corpo)) {
+        colega.estourarBolha();
       }
     }
 
@@ -411,7 +439,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       .map((h) => (h.position.x - x).abs())
       .reduce((a, b) => a < b ? a : b);
 
-  void criarPedraNaFrente(Heroi heroi) {
+  PedraMagica? criarPedraNaFrente(Heroi heroi) {
     final coluna = heroi.direcao > 0
         ? ((heroi.position.x + heroi.size.x) / tamanhoBloco).ceil()
         : (heroi.position.x / tamanhoBloco).floor() - 1;
@@ -428,7 +456,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
         tamanhoBloco,
       );
       if (area.overlaps(heroi.toRect())) {
-        return;
+        return null;
       }
       var acertou = false;
       for (final inimigo in alvos) {
@@ -439,7 +467,7 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       }
       if (acertou) {
         Sons.tocar('terra', volume: 0.5);
-        return;
+        return null;
       }
       if (_pedrasAtivas.length >= _maximoDePedras) {
         removerPedra(_pedrasAtivas.first);
@@ -448,8 +476,9 @@ class Fase extends World with HasGameReference<AventuraJogo> {
       _pedras.add((coluna, linha));
       _pedrasAtivas.add(pedra);
       add(pedra);
-      return;
+      return pedra;
     }
+    return null;
   }
 
   bool golpearCelula(int coluna, int linha, Golpe golpe) {

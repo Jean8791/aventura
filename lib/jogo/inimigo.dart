@@ -6,6 +6,7 @@ import 'package:flame/effects.dart';
 import 'package:flame/particles.dart';
 
 import 'alvo.dart';
+import 'bolha_presa.dart';
 import 'aventura_jogo.dart';
 import 'classes.dart';
 import 'fase.dart';
@@ -73,7 +74,7 @@ class Inimigo extends PositionComponent
       );
 
   static const double _gravidade = 1000;
-  static const double _tempoPreso = 4;
+  static const double _tempoPreso = 3;
 
   final TipoDeInimigo tipo;
   final Vector2 _origem;
@@ -82,14 +83,14 @@ class Inimigo extends PositionComponent
   @override
   bool vivo = true;
   double _direcao = -1;
-  double _preso = 0;
+  Aprisionamento? _aprisionamento;
   double _relogio = Random().nextDouble() * 10;
   double _piscando = 0;
 
   late final SpriteComponent _visual;
   CircleComponent? _bolha;
 
-  bool get preso => _preso > 0;
+  bool get preso => _aprisionamento != null;
 
   double get _raioDaBolha => max(size.x, size.y) * 0.85;
 
@@ -134,16 +135,23 @@ class Inimigo extends PositionComponent
           : null;
     }
 
-    if (preso) {
-      _preso -= dt;
-      position.y += sin(_relogio * 4) * 6 * dt;
+    final aprisionamento = _aprisionamento;
+    if (aprisionamento != null) {
+      // Flutua para cima dentro da bolha e estoura sozinho no fim (sem dano).
+      final coluna = (center.x / tamanhoBloco).floor();
+      final linhaAcima = ((areaDaBolha.top - 1) / tamanhoBloco).floor();
+      position.y -= aprisionamento.atualizar(
+        dt,
+        tetoAcima: fase.solido(coluna, linhaAcima),
+      );
+      final restante = aprisionamento.restante;
       _bolha?.paint.color = Color.fromARGB(
-        _preso < 1 && (_preso * 8).floor().isEven ? 40 : 110,
+        restante < 1 && (restante * 8).floor().isEven ? 40 : 110,
         120,
         200,
         255,
       );
-      if (_preso <= 0) {
+      if (aprisionamento.estourou) {
         _soltar();
       }
       return;
@@ -207,10 +215,10 @@ class Inimigo extends PositionComponent
 
   void _prender() {
     if (preso) {
-      _preso = _tempoPreso;
+      _aprisionamento = Aprisionamento(duracao: _tempoPreso);
       return;
     }
-    _preso = _tempoPreso;
+    _aprisionamento = Aprisionamento(duracao: _tempoPreso);
     velocidade.setZero();
     Sons.tocar('bolha', volume: 0.5);
     final raio = _raioDaBolha;
@@ -237,8 +245,18 @@ class Inimigo extends PositionComponent
     add(_bolha!);
   }
 
+  /// O herói estourou a bolha (pulando em cima ou encostando): leva dano.
+  void estourarBolha() {
+    if (!preso) {
+      return;
+    }
+    _soltar();
+    Sons.tocar('bolha', volume: 0.6);
+    receberGolpe(Golpe.pisao);
+  }
+
   void _soltar() {
-    _preso = 0;
+    _aprisionamento = null;
     _bolha?.removeFromParent();
     _bolha = null;
     if (tipo == TipoDeInimigo.morcego) {

@@ -7,6 +7,7 @@ import 'package:flame/particles.dart';
 
 import 'alvo.dart';
 import 'aventura_jogo.dart';
+import 'bolha_presa.dart';
 import 'classes.dart';
 import 'fase.dart';
 import 'heroi.dart';
@@ -20,7 +21,45 @@ abstract class Poder extends PositionComponent
 
   final Set<Alvo> _atingidos = {};
 
+  /// Jogador que lançou (0 ou 1). Poderes de jogadores diferentes que se
+  /// encostam se anulam: os dois somem.
+  int dono = 0;
+
   Fase get fase => game.fase!;
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    _anularSeEncostar();
+  }
+
+  void _anularSeEncostar() {
+    if (game.jogadores < 2 || isRemoving) {
+      return;
+    }
+    final area = toRect();
+    for (final outro in fase.children.whereType<Poder>()) {
+      if (identical(outro, this) || outro.isRemoving) {
+        continue;
+      }
+      if (deveAnular(
+        donoA: dono,
+        areaA: area,
+        donoB: outro.dono,
+        areaB: outro.toRect(),
+      )) {
+        soltarFaiscas(
+          Vector2(area.center.dx, area.center.dy),
+          const Color(0xFFFFFFFF),
+          quantidade: 12,
+        );
+        Sons.tocar('acerto', volume: 0.4);
+        outro.removeFromParent();
+        removeFromParent();
+        return;
+      }
+    }
+  }
 
   int acertarInimigos(
     Rect area,
@@ -102,6 +141,9 @@ class Espadada extends Poder {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isRemoving) {
+      return;
+    }
     _tempo += dt;
     _posicionar();
     final progresso = (_tempo / _duracao).clamp(0.0, 1.0);
@@ -158,6 +200,9 @@ class EspadaArremessada extends Poder {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isRemoving) {
+      return;
+    }
     final passo = _velocidade * dt;
     position.x += direcao * passo;
     _percorrido += passo;
@@ -231,8 +276,53 @@ class PreviaDaCarga extends PositionComponent
     }
   }
 
+  final Paint _agua = Paint()..color = const Color(0x6678C8FF);
+  final Paint _bordaDaAgua = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1
+    ..color = const Color(0xDDFFFFFF);
+
   @override
   void render(Canvas canvas) {
+    if (golpe == Golpe.terra) {
+      // Broca girando cada vez mais rápido conforme a carga.
+      final largura = 9 * escala;
+      final altura = 5 * escala;
+      desenharBroca(
+        canvas,
+        Rect.fromLTWH(direcao > 0 ? 0 : -largura, -altura / 2, largura, altura),
+        direcao,
+        _tempo * escala,
+      );
+      return;
+    }
+    if (golpe == Golpe.fogo) {
+      final r = 3 * escala + sin(_tempo * 18) * 0.4;
+      canvas.drawCircle(
+        Offset.zero,
+        r * 1.6,
+        Paint()..color = const Color(0x55FF8A3D),
+      );
+      canvas.drawCircle(
+        Offset.zero,
+        r,
+        Paint()..color = const Color(0xFFFF6B1A),
+      );
+      canvas.drawCircle(
+        Offset.zero,
+        r * 0.55,
+        Paint()..color = const Color(0xFFFFE066),
+      );
+      return;
+    }
+    if (golpe == Golpe.agua) {
+      // Bolha crescendo na mão, balançando de leve.
+      final r = 4 * escala + sin(_tempo * 10) * 0.5;
+      canvas.drawCircle(Offset.zero, r, _agua);
+      canvas.drawCircle(Offset.zero, r, _bordaDaAgua);
+      canvas.drawCircle(Offset(r * 0.35, -r * 0.35), r * 0.2, _nucleo);
+      return;
+    }
     if (golpe != Golpe.raio) {
       return;
     }
@@ -245,6 +335,107 @@ class PreviaDaCarga extends PositionComponent
       canvas.drawLine(Offset.zero, ponta, _faisca);
     }
   }
+}
+
+/// Distância da broca de terra: cresce com a carga (140 px por 1× de escala).
+double alcanceDaBroca(double escala) => 140 * escala;
+
+/// Desenha uma broca de pedra apontando para [direcao], com listras que
+/// andam conforme [giro] (dá a impressão de estar girando).
+void desenharBroca(Canvas canvas, Rect area, double direcao, double giro) {
+  final base = direcao > 0 ? area.left : area.right;
+  final ponta = direcao > 0 ? area.right : area.left;
+  final corpo = Path()
+    ..moveTo(base, area.top)
+    ..lineTo(ponta, area.center.dy)
+    ..lineTo(base, area.bottom)
+    ..close();
+  canvas.drawPath(corpo, Paint()..color = const Color(0xFF8B5A2B));
+  canvas.save();
+  canvas.clipPath(corpo);
+  final listra = Paint()
+    ..color = const Color(0xFFC08A4A)
+    ..strokeWidth = max(1.0, area.height * 0.18);
+  final passo = area.height * 0.6;
+  final deslocamento = (giro * passo * 6) % passo;
+  for (
+    var x = area.left - area.height + deslocamento;
+    x < area.right + area.height;
+    x += passo
+  ) {
+    canvas.drawLine(
+      Offset(x, area.bottom),
+      Offset(x + area.height * 0.7, area.top),
+      listra,
+    );
+  }
+  canvas.restore();
+  canvas.drawPath(
+    corpo,
+    Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1
+      ..color = const Color(0xFF4A2F17),
+  );
+}
+
+/// Golpe carregado da Maga da Terra: uma broca de pedra girando voa reto,
+/// atravessa inimigos (com a força da carga), perfura rachadas e para na
+/// parede.
+class BrocaDeTerra extends Poder {
+  BrocaDeTerra({
+    required Vector2 origem,
+    required this.direcao,
+    required this.escala,
+    required this.forca,
+  }) : super(
+         position: origem,
+         size: Vector2(14 * escala, 8 * escala),
+         anchor: Anchor.center,
+       );
+
+  final double direcao;
+  final double escala;
+  final int forca;
+  double _percorrido = 0;
+  double _giro = 0;
+  static const _velocidade = 260.0;
+  late final double alcance = alcanceDaBroca(escala);
+
+  @override
+  Future<void> onLoad() async {
+    Sons.tocar('terra', volume: 0.7);
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (isRemoving) {
+      return;
+    }
+    _giro += dt;
+    final passo = _velocidade * dt;
+    position.x += direcao * passo;
+    _percorrido += passo;
+    acertarInimigos(toRect(), Golpe.terra, forca: forca);
+    final ponta = position.x + direcao * size.x / 2;
+    final areaDaPonta = Rect.fromLTRB(
+      min(ponta, ponta - direcao * 4),
+      position.y - size.y / 2,
+      max(ponta, ponta - direcao * 4),
+      position.y + size.y / 2,
+    );
+    fase.golpearArea(areaDaPonta, Golpe.terra);
+    final bateu = bateuEmBloco(ponta, position.y);
+    if (_percorrido > alcance || bateu) {
+      soltarFaiscas(Vector2(ponta, position.y), const Color(0xFFC08A4A));
+      removeFromParent();
+    }
+  }
+
+  @override
+  void render(Canvas canvas) =>
+      desenharBroca(canvas, Offset.zero & size.toSize(), direcao, _giro);
 }
 
 class Raio extends Poder {
@@ -273,6 +464,9 @@ class Raio extends Poder {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isRemoving) {
+      return;
+    }
     final passo = _velocidade * dt;
     position.x += direcao * passo;
     _percorrido += passo;
@@ -304,11 +498,21 @@ class Raio extends Poder {
   }
 }
 
+/// Raio da explosão da bola de fogo carregada (0 = sem explosão em área).
+double raioDaExplosao(double escala) => escala > 1 ? 14 * escala : 0;
+
 class BolaDeFogo extends Poder {
-  BolaDeFogo({required Vector2 origem, required this.direcao})
-    : super(position: origem, size: Vector2.all(8), anchor: Anchor.center);
+  /// [escala] > 1 é a bola carregada: maior e explode em área ao bater,
+  /// queimando inimigos e derretendo gelo em volta.
+  BolaDeFogo({required Vector2 origem, required this.direcao, this.escala = 1})
+    : super(
+        position: origem,
+        size: Vector2.all(8 * escala),
+        anchor: Anchor.center,
+      );
 
   final double direcao;
+  final double escala;
   final Vector2 _velocidade = Vector2.zero();
   double _vida = 1.8;
   double _rastro = 0;
@@ -325,18 +529,26 @@ class BolaDeFogo extends Poder {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isRemoving) {
+      return;
+    }
     dt = min(dt, 1 / 30);
     _vida -= dt;
     _velocidade.y += 700 * dt;
     position.x += _velocidade.x * dt;
-    if (fase.golpearPonto(position.x + direcao * 4, position.y, Golpe.fogo)) {
+    if (fase.golpearPonto(
+      position.x + direcao * size.x / 2,
+      position.y,
+      Golpe.fogo,
+    )) {
       _explodir();
       return;
     }
     position.y += _velocidade.y * dt;
-    if (_velocidade.y > 0 && bateuEmBloco(position.x, position.y + 4)) {
+    final meio = size.y / 2;
+    if (_velocidade.y > 0 && bateuEmBloco(position.x, position.y + meio)) {
       position.y =
-          (((position.y + 4) / tamanhoBloco).floor()) * tamanhoBloco - 4;
+          (((position.y + meio) / tamanhoBloco).floor()) * tamanhoBloco - meio;
       _velocidade.y = -210;
       _quiques++;
     }
@@ -355,7 +567,7 @@ class BolaDeFogo extends Poder {
         ParticleSystemComponent(
           position: position.clone(),
           particle: CircleParticle(
-            radius: 2.5,
+            radius: 2.5 * escala,
             lifespan: 0.25,
             paint: Paint()..color = const Color(0x99FF8A3D),
           ),
@@ -365,6 +577,17 @@ class BolaDeFogo extends Poder {
   }
 
   void _explodir() {
+    final raio = raioDaExplosao(escala);
+    if (raio > 0) {
+      final area = Rect.fromCircle(
+        center: Offset(position.x, position.y),
+        radius: raio,
+      );
+      acertarInimigos(area, Golpe.fogo);
+      fase.golpearArea(area, Golpe.fogo);
+      Sons.tocar('fogo', volume: 0.8);
+      soltarFaiscas(position, const Color(0xFFFFE066), quantidade: 30);
+    }
     soltarFaiscas(position, const Color(0xFFFF8A3D), quantidade: 10);
     removeFromParent();
   }
@@ -372,16 +595,23 @@ class BolaDeFogo extends Poder {
   @override
   void render(Canvas canvas) {
     final centro = Offset(size.x / 2, size.y / 2);
-    canvas.drawCircle(centro, 4, _fora);
-    canvas.drawCircle(centro, 2.2, _dentro);
+    canvas.drawCircle(centro, 4 * escala, _fora);
+    canvas.drawCircle(centro, 2.2 * escala, _dentro);
   }
 }
 
 class Bolha extends Poder {
-  Bolha({required Vector2 origem, required this.direcao})
-    : super(position: origem, size: Vector2.all(12), anchor: Anchor.center);
+  /// [escala] > 1 é a bolha carregada: maior, atravessa e prende vários.
+  /// Também prende o colega (no modo dupla), só de brincadeira.
+  Bolha({required Vector2 origem, required this.direcao, this.escala = 1})
+    : super(
+        position: origem,
+        size: Vector2.all(12 * escala),
+        anchor: Anchor.center,
+      );
 
   final double direcao;
+  final double escala;
   double _tempo = 0;
   late final double _baseY;
   final Paint _corpo = Paint()..color = const Color(0x6678C8FF);
@@ -400,6 +630,9 @@ class Bolha extends Poder {
   @override
   void update(double dt) {
     super.update(dt);
+    if (isRemoving) {
+      return;
+    }
     _tempo += dt;
     position.x += direcao * 150 * dt;
     position.y = _baseY - _tempo * 10 + sin(_tempo * 12) * 2;
@@ -411,9 +644,20 @@ class Bolha extends Poder {
         return;
       }
     }
-    if (acertarInimigos(area, Golpe.agua, atravessa: false) > 0 ||
-        _tempo > 1.4 ||
-        bateuEmBloco(position.x + direcao * 6, position.y)) {
+    final carregada = escala > 1;
+    var pegou = acertarInimigos(area, Golpe.agua, atravessa: carregada) > 0;
+    for (final heroi in fase.herois) {
+      if (heroi.jogador != dono &&
+          heroi.ativo &&
+          !heroi.naBolha &&
+          heroi.toRect().overlaps(area)) {
+        heroi.prenderNaBolha();
+        pegou = true;
+      }
+    }
+    if ((pegou && !carregada) ||
+        _tempo > 1.4 + 0.4 * (escala - 1) ||
+        bateuEmBloco(position.x + direcao * size.x / 2, position.y)) {
       soltarFaiscas(position, const Color(0xFFB8E4FF), quantidade: 6);
       removeFromParent();
     }
@@ -422,9 +666,13 @@ class Bolha extends Poder {
   @override
   void render(Canvas canvas) {
     final centro = Offset(size.x / 2, size.y / 2);
-    canvas.drawCircle(centro, 5.5, _corpo);
-    canvas.drawCircle(centro, 5.5, _borda);
-    canvas.drawCircle(centro + const Offset(1.8, -1.8), 1.2, _reflexo);
+    canvas.drawCircle(centro, 5.5 * escala, _corpo);
+    canvas.drawCircle(centro, 5.5 * escala, _borda);
+    canvas.drawCircle(
+      centro + Offset(1.8, -1.8) * escala,
+      1.2 * escala,
+      _reflexo,
+    );
   }
 }
 
