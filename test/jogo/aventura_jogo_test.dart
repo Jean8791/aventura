@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:aventura/jogo/aventura_jogo.dart';
 import 'package:aventura/jogo/classes.dart';
 import 'package:aventura/jogo/fase.dart';
 import 'package:aventura/jogo/fases.dart';
 import 'package:aventura/jogo/progresso.dart';
+import 'package:aventura/jogo/sons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +20,13 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await Progresso.carregar();
+  });
+
+  test('a música dos menus existe', () {
+    expect(
+      File('assets/audio/${AventuraJogo.musicaDosMenus}').existsSync(),
+      isTrue,
+    );
   });
 
   test('vencer a fase do chefe abre os créditos', () {
@@ -51,6 +61,7 @@ void main() {
         sair(jogo);
         expect(jogo.fase, isNull);
         expect(jogo.world, isNot(isA<Fase>()));
+        expect(Sons.musicaAtual, AventuraJogo.musicaDosMenus);
       });
     }
   });

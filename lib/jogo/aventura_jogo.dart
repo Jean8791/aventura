@@ -35,6 +35,9 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   static const overlayDerrota = 'derrota';
   static const overlayPausa = 'pausa';
 
+  /// Tema geral de aventura: menus (jogadores, herói, fase) e créditos.
+  static const musicaDosMenus = 'musica_aventura.mp3';
+
   final List<Controle> controles = [Controle(), Controle()];
   final EntradaDeControles _entrada = EntradaDeControles();
   StreamSubscription<EventoDeControle>? _assinaturaDaEntrada;
@@ -104,6 +107,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     _entrada.iniciar();
     _assinaturaDaEntrada = _entrada.eventos.listen(_receberControle);
     _abrirMenu(overlayModo);
+    Sons.iniciarMusica(musicaDosMenus, menu: true);
   }
 
   @override
@@ -144,6 +148,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void _fecharTudo() {
+    _pararJingles();
     overlays.removeAll([
       overlayModo,
       overlayEntrar,
@@ -268,7 +273,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   /// Tira a fase do fundo ao ir para um menu. Antes ela continuava rodando
   /// atrás do menu (o motor era religado com a fase ainda no mundo).
   void _sairDaFase() {
-    Sons.pararMusica();
+    Sons.iniciarMusica(musicaDosMenus, menu: true);
     _fecharTudo();
     final vazio = World();
     fase = null;
@@ -425,7 +430,15 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
     _abrirMenu(overlayDerrota);
   }
 
+  /// Jingles longos não podem seguir tocando depois que o jogador sai da tela.
+  void _pararJingles() {
+    Sons.pararEfeito('derrota');
+    Sons.pararEfeito('vitoria');
+    Sons.pararEfeito('vitoria_final');
+  }
+
   void tentarDeNovo() {
+    _pararJingles();
     overlays.remove(overlayDerrota);
     overlays.add(overlayControles);
     for (var j = 0; j < jogadores; j++) {
@@ -456,7 +469,7 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
       Sons.tocar('vitoria_final', volume: 0.7);
       Future.delayed(const Duration(milliseconds: 2500), () {
         if (overlays.isActive(overlayCreditos)) {
-          Sons.iniciarMusica('musica_creditos.wav');
+          Sons.iniciarMusica(musicaDosMenus, menu: true);
         }
       });
     } else {

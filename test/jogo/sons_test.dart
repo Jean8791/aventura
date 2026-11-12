@@ -31,6 +31,7 @@ void main() {
       final arquivo = [
         '$nome.wav',
         '$nome.ogg',
+        '$nome.mp3',
       ].where((a) => File('assets/audio/$a').existsSync()).toList();
       expect(arquivo, hasLength(1), reason: 'arquivo de "$nome"');
       expect(
@@ -58,6 +59,27 @@ void main() {
 
   test('cada fase tem música própria', () {
     expect(fases.map((f) => f.musica).toSet(), hasLength(fases.length));
+  });
+
+  group('qual chave vale', () {
+    setUp(() {
+      Sons.musicaDoMenuLigada.value = true;
+      Sons.musicaDaFaseLigada.value = true;
+    });
+
+    test('música de menu segue a chave dos menus', () {
+      Sons.musicaDaFaseLigada.value = false;
+      expect(Sons.ligadaPara(menu: true), isTrue);
+      Sons.musicaDoMenuLigada.value = false;
+      expect(Sons.ligadaPara(menu: true), isFalse);
+    });
+
+    test('música de fase segue a chave das fases', () {
+      Sons.musicaDoMenuLigada.value = false;
+      expect(Sons.ligadaPara(menu: false), isTrue);
+      Sons.musicaDaFaseLigada.value = false;
+      expect(Sons.ligadaPara(menu: false), isFalse);
+    });
   });
 
   group('faixa de fundo', () {

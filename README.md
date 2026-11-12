@@ -127,13 +127,17 @@ Abra o arquivo no Tiled, desenhe com os blocos de `blocos.png`, salve e rode o j
 
 As fases foram geradas por `ferramentas/gerar_fases.py`. Rodar o script de novo **sobrescreve** as edições feitas no Tiled. Para criar uma fase nova, acrescente uma função no script e uma entrada em `lib/jogo/fases.dart`.
 
-## Música
+## Música e sons
 
-As músicas são composições originais, geradas por `ferramentas/gerar_musica.py` (Python puro, sem dependências): melodia 8-bit, baixo e bateria, com 16 compassos que repetem sem emenda. A das fases é em Dó maior a 150 BPM; a do chefão, em Lá menor a 168 BPM. Para mudar, edite `MELODIA`/`ACORDES` (ou `MELODIA_CHEFE`/`ACORDES_CHEFE`) no script e rode:
+- **Músicas:** orquestrais do [OpenGameArt](https://opengameart.org/), uma por fase, mais um tema de aventura para os menus e os créditos. Com a música desligada, cada fase toca um som de fundo gravado (vento, fogueira, caverna...). Autores e licenças em [`assets/CREDITOS-AUDIO.md`](assets/CREDITOS-AUDIO.md); quase tudo é CC0, e "Ice Cave" (TAD) é CC-BY 4.0.
+- **Efeitos do herói** (pulo, dano e poderes): sons originais gerados por `ferramentas/gerar_sons.py` (Python puro). Para ouvir as versões alternativas ou regerar:
 
 ```bash
-python3 ferramentas/gerar_musica.py
+python3 ferramentas/gerar_sons.py --previa /tmp/previa   # versões a/b/c de cada som
+python3 ferramentas/gerar_sons.py                        # grava as escolhidas em assets/audio/
 ```
+
+- **Demais efeitos:** Kenney (CC0).
 
 ## Ícone
 

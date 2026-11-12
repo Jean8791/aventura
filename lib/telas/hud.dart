@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'botao_musica.dart';
+
 import '../jogo/aventura_jogo.dart';
 import '../jogo/chefe.dart';
 import '../jogo/classes.dart';
-import '../jogo/sons.dart';
 
 const _corDoTexto = TextStyle(
   fontSize: 26,
@@ -46,7 +47,7 @@ class Hud extends StatelessWidget {
                     icone: Icons.pause_rounded,
                     aoApertar: jogo.pausar,
                   ),
-                  _BotaoDeSom(),
+                  const BotaoDeMusica.daFase(),
                 ],
               ),
             ),
@@ -279,30 +280,6 @@ class _BotaoRedondo extends StatelessWidget {
           color: Colors.white,
           onPressed: aoApertar,
           icon: Icon(icone),
-        ),
-      ),
-    );
-  }
-}
-
-class _BotaoDeSom extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(12),
-      child: ValueListenableBuilder<bool>(
-        valueListenable: Sons.musicaLigada,
-        builder: (_, ligada, _) => Material(
-          color: const Color(0x993B2B4F),
-          shape: const CircleBorder(),
-          child: IconButton(
-            iconSize: 30,
-            color: Colors.white,
-            onPressed: Sons.alternarMusica,
-            icon: Icon(
-              ligada ? Icons.music_note_rounded : Icons.music_off_rounded,
-            ),
-          ),
         ),
       ),
     );

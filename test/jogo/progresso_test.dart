@@ -17,7 +17,6 @@ void main() {
       expect(Progresso.ultimoHeroi, 0);
       expect(Progresso.heroiDoJogador2, 1);
       expect(Progresso.jogadores, 1);
-      expect(Progresso.musicaLigada, isTrue);
     });
 
     test('nenhuma fase concluída e nenhum diamante', () {
@@ -53,12 +52,10 @@ void main() {
       Progresso.ultimoHeroi = 3;
       Progresso.heroiDoJogador2 = 2;
       Progresso.jogadores = 2;
-      Progresso.musicaLigada = false;
       expect(Progresso.ultimaFase, 4);
       expect(Progresso.ultimoHeroi, 3);
       expect(Progresso.heroiDoJogador2, 2);
       expect(Progresso.jogadores, 2);
-      expect(Progresso.musicaLigada, isFalse);
     });
 
     test('sobrevive a recarregar (persistiu no SharedPreferences)', () async {

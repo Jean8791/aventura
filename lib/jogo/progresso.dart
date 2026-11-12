@@ -43,7 +43,4 @@ class Progresso {
 
   static int get jogadores => _prefs.getInt('jogadores') ?? 1;
   static set jogadores(int valor) => _prefs.setInt('jogadores', valor);
-
-  static bool get musicaLigada => _prefs.getBool('musica_ligada') ?? true;
-  static set musicaLigada(bool valor) => _prefs.setBool('musica_ligada', valor);
 }

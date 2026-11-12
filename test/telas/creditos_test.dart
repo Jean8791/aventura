@@ -78,6 +78,7 @@ void main() {
     await _mostrar(tester);
 
     expect(find.textContaining('Ice Cave'), findsOneWidget);
+    expect(find.textContaining('A Legend Will Rise'), findsOneWidget);
     expect(find.textContaining('TAD'), findsOneWidget);
     expect(find.textContaining('CC-BY 4.0'), findsOneWidget);
     expect(find.textContaining('OpenGameArt'), findsWidgets);

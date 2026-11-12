@@ -1,8 +1,6 @@
 import 'package:flame_audio/flame_audio.dart';
 import 'package:flutter/foundation.dart';
 
-import 'progresso.dart';
-
 class Sons {
   static const _efeitos = {
     'pulo.wav': 3,
@@ -11,10 +9,10 @@ class Sons {
     'dano.wav': 2,
     'mola.ogg': 2,
     'checkpoint.ogg': 2,
-    'vitoria.ogg': 1,
+    'vitoria.mp3': 1,
     'vitoria_final.ogg': 1,
     'chefe_derrotado.ogg': 1,
-    'derrota.ogg': 1,
+    'derrota.wav': 1,
     'espada.wav': 3,
     'raio.wav': 3,
     'fogo.wav': 3,
@@ -23,6 +21,9 @@ class Sons {
     'acerto.ogg': 3,
   };
   static String? _musica;
+
+  /// Música pedida por último (mesmo que esteja desligada ou parada).
+  static String? get musicaAtual => _musica;
   static String? _ambiente;
   static String? _tocandoAgora;
   static const _volumeDaMusica = 0.35;
@@ -30,9 +31,14 @@ class Sons {
   static final Map<String, List<AudioPlayer>> _tocadores = {};
   static final Map<String, int> _proximo = {};
 
-  static final ValueNotifier<bool> musicaLigada = ValueNotifier(
-    Progresso.musicaLigada,
-  );
+  /// Duas chaves independentes: a música dos menus (e créditos) e a das
+  /// fases. Sempre começam ligadas; o botão vale só até fechar o jogo.
+  static final ValueNotifier<bool> musicaDoMenuLigada = ValueNotifier(true);
+  static final ValueNotifier<bool> musicaDaFaseLigada = ValueNotifier(true);
+  static bool _trilhaDeMenu = false;
+
+  static bool ligadaPara({required bool menu}) =>
+      (menu ? musicaDoMenuLigada : musicaDaFaseLigada).value;
   static bool _musicaTocando = false;
 
   static Future<void> carregar() async {
@@ -61,9 +67,11 @@ class Sons {
   }
 
   static void tocar(String nome, {double volume = 0.6}) {
-    final arquivo = _tocadores.containsKey('$nome.wav')
-        ? '$nome.wav'
-        : '$nome.ogg';
+    final arquivo = [
+      '$nome.wav',
+      '$nome.ogg',
+      '$nome.mp3',
+    ].firstWhere(_tocadores.containsKey, orElse: () => '');
     final lista = _tocadores[arquivo];
     if (lista == null || lista.isEmpty) {
       return;
@@ -76,6 +84,19 @@ class Sons {
         .then((_) => tocador.setVolume(volume))
         .then((_) => tocador.resume())
         .catchError((_) {});
+  }
+
+  /// Interrompe um efeito que ainda está tocando (ex.: jingle de derrota).
+  static void pararEfeito(String nome) {
+    for (final lista in [
+      _tocadores['$nome.wav'],
+      _tocadores['$nome.ogg'],
+      _tocadores['$nome.mp3'],
+    ]) {
+      for (final tocador in lista ?? const <AudioPlayer>[]) {
+        tocador.stop().catchError((_) {});
+      }
+    }
   }
 
   /// Com a música ligada toca a música; desligada, o som de fundo (se houver).
@@ -96,10 +117,15 @@ class Sons {
   }
 
   /// Começa a trilha de uma tela: [musica] e, opcionalmente, o som de fundo
-  /// que a substitui quando a música está desligada.
-  static void iniciarMusica(String musica, {String? ambiente}) {
+  /// que a substitui quando a música está desligada. [menu] diz qual chave vale.
+  static void iniciarMusica(
+    String musica, {
+    String? ambiente,
+    bool menu = false,
+  }) {
     _musica = musica;
     _ambiente = ambiente;
+    _trilhaDeMenu = menu;
     _musicaTocando = true;
     _tocarFaixa();
   }
@@ -122,7 +148,7 @@ class Sons {
   /// Aplica o estado atual (não o do momento do pedido): vale o último toque.
   static void _tocarFaixa() => _enfileirar(() async {
     final faixa = _musicaTocando
-        ? faixaDeFundo(musicaLigada.value, _musica, _ambiente)
+        ? faixaDeFundo(ligadaPara(menu: _trilhaDeMenu), _musica, _ambiente)
         : null;
     if (faixa == null) {
       _tocandoAgora = null;
@@ -151,10 +177,12 @@ class Sons {
     _tocarFaixa();
   }
 
-  static void alternarMusica() {
-    musicaLigada.value = !musicaLigada.value;
-    Progresso.musicaLigada = musicaLigada.value;
-    if (_musicaTocando) {
+  /// Liga/desliga a música dos menus ou a das fases. Só mexe no que está
+  /// tocando se a trilha atual for daquele tipo.
+  static void alternarMusica({required bool menu}) {
+    final chave = menu ? musicaDoMenuLigada : musicaDaFaseLigada;
+    chave.value = !chave.value;
+    if (_musicaTocando && _trilhaDeMenu == menu) {
       _tocarFaixa();
     }
   }

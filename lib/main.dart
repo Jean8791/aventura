@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 
 import 'jogo/aventura_jogo.dart';
 import 'jogo/progresso.dart';
+import 'telas/botao_musica.dart';
 import 'telas/controles_toque.dart';
 import 'telas/creditos.dart';
 import 'telas/entrar_jogadores.dart';
@@ -100,11 +101,13 @@ class _AventuraAppState extends State<AventuraApp> {
             autofocus: false,
             overlayBuilderMap: {
               AventuraJogo.overlayEscolha: (_, jogo) =>
-                  EscolhaHeroi(jogo: jogo),
-              AventuraJogo.overlayModo: (_, jogo) => EscolhaModo(jogo: jogo),
+                  ComBotaoDeMusica(child: EscolhaHeroi(jogo: jogo)),
+              AventuraJogo.overlayModo: (_, jogo) =>
+                  ComBotaoDeMusica(child: EscolhaModo(jogo: jogo)),
               AventuraJogo.overlayEntrar: (_, jogo) =>
-                  EntrarJogadores(jogo: jogo),
-              AventuraJogo.overlayFases: (_, jogo) => EscolhaFase(jogo: jogo),
+                  ComBotaoDeMusica(child: EntrarJogadores(jogo: jogo)),
+              AventuraJogo.overlayFases: (_, jogo) =>
+                  ComBotaoDeMusica(child: EscolhaFase(jogo: jogo)),
               AventuraJogo.overlayPausa: (_, jogo) => TelaPausa(jogo: jogo),
               AventuraJogo.overlayHud: (_, jogo) => Hud(jogo: jogo),
               AventuraJogo.overlayControles: (_, jogo) =>
