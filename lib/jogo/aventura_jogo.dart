@@ -261,9 +261,20 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void abrirEscolhaDeModo() {
+    _sairDaFase();
+    _abrirMenu(overlayModo);
+  }
+
+  /// Tira a fase do fundo ao ir para um menu. Antes ela continuava rodando
+  /// atrás do menu (o motor era religado com a fase ainda no mundo).
+  void _sairDaFase() {
     Sons.pararMusica();
     _fecharTudo();
-    _abrirMenu(overlayModo);
+    final vazio = World();
+    fase = null;
+    world = vazio;
+    camera.world = vazio;
+    vidaDoChefe.value = null;
   }
 
   void _abrirEscolhaDeHeroi(int jogador) {
@@ -289,14 +300,12 @@ class AventuraJogo extends FlameGame with KeyboardEvents {
   }
 
   void abrirEscolhaDeFase() {
-    Sons.pararMusica();
-    _fecharTudo();
+    _sairDaFase();
     _abrirMenu(overlayFases);
   }
 
   void voltarParaEscolha() {
-    Sons.pararMusica();
-    _fecharTudo();
+    _sairDaFase();
     _abrirEscolhaDeHeroi(0);
   }
 
